@@ -48,7 +48,7 @@ stmt:
 
 assign_stmt:
     ID ASSIGN exp {
-        checkUndeclaredVariable($1);
+        declareVariable($1);
          Symbol *symbol = findSymbol($1);
         if (symbol == NULL) {
             insertSymbol($1, $3->value ? atoi($3->value) : 0);
@@ -71,6 +71,7 @@ repeat_stmt:
 
 read_stmt:
     READ ID {
+        declareVariable($2);
         Symbol *symbol = findSymbol($2);
         if (symbol == NULL) {
             insertSymbol($2, 0);
@@ -82,6 +83,7 @@ read_stmt:
 
 write_stmt:
     WRITE ID {
+        checkUndeclaredVariable($2);
          Symbol *symbol = findSymbol($2);
         if (symbol != NULL) {
             printf("Value of %s: %d\n", $2, symbol->value);
@@ -190,6 +192,12 @@ void checkUndeclaredVariable(char *name) {
     if (findSymbol(name) == NULL) {
         fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
         exit(1);
+    }
+}
+
+void declareVariable(char *name) {
+    if (findSymbol(name) == NULL) {
+        insertSymbol(name, 0);
     }
 }
 

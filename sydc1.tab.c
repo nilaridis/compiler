@@ -448,8 +448,8 @@ static const yytype_int8 yyrhs[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    33,    33,    37,    38,    42,    43,    44,    45,    46,
-      50,    64,    65,    69,    73,    84,    97,   102,   103,   104,
-     108,   109,   110,   114,   115,   116,   120,   125,   136
+      50,    64,    65,    69,    73,    85,    99,   104,   105,   106,
+     110,   111,   112,   116,   117,   118,   122,   127,   138
 };
 #endif
 
@@ -1402,7 +1402,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 50 "sydc1.y"
     {
-        checkUndeclaredVariable((yyvsp[(1) - (3)].ystr));
+        declareVariable((yyvsp[(1) - (3)].ystr));
          Symbol *symbol = findSymbol((yyvsp[(1) - (3)].ystr));
         if (symbol == NULL) {
             insertSymbol((yyvsp[(1) - (3)].ystr), (yyvsp[(3) - (3)].node)->value ? atoi((yyvsp[(3) - (3)].node)->value) : 0);
@@ -1440,6 +1440,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 73 "sydc1.y"
     {
+        declareVariable((yyvsp[(2) - (2)].ystr));
         Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
         if (symbol == NULL) {
             insertSymbol((yyvsp[(2) - (2)].ystr), 0);
@@ -1452,8 +1453,9 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 84 "sydc1.y"
+#line 85 "sydc1.y"
     {
+        checkUndeclaredVariable((yyvsp[(2) - (2)].ystr));
          Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
         if (symbol != NULL) {
             printf("Value of %s: %d\n", (yyvsp[(2) - (2)].ystr), symbol->value);
@@ -1468,56 +1470,56 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 97 "sydc1.y"
+#line 99 "sydc1.y"
     {(yyval.node) = (yyvsp[(1) - (1)].node);;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 103 "sydc1.y"
+#line 105 "sydc1.y"
     { (yyval.node) = createNode('<', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 104 "sydc1.y"
+#line 106 "sydc1.y"
     { (yyval.node) = createNode('=', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 109 "sydc1.y"
+#line 111 "sydc1.y"
     { (yyval.node) = createNode('+', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 110 "sydc1.y"
+#line 112 "sydc1.y"
     { (yyval.node) = createNode('-', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 115 "sydc1.y"
+#line 117 "sydc1.y"
     { (yyval.node) = createNode('*', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 116 "sydc1.y"
+#line 118 "sydc1.y"
     { (yyval.node) = createNode('/', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 120 "sydc1.y"
+#line 122 "sydc1.y"
     { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", (yyvsp[(1) - (1)].yint));
@@ -1528,7 +1530,7 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 125 "sydc1.y"
+#line 127 "sydc1.y"
     {
         checkUndeclaredVariable((yyvsp[(1) - (1)].ystr));
         Symbol *symbol = findSymbol((yyvsp[(1) - (1)].ystr));
@@ -1545,14 +1547,14 @@ yyreduce:
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 136 "sydc1.y"
+#line 138 "sydc1.y"
     { (yyval.node) = (yyvsp[(2) - (3)].node); ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1556 "sydc1.tab.c"
+#line 1558 "sydc1.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1764,7 +1766,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 139 "sydc1.y"
+#line 141 "sydc1.y"
 
 
 AstNode *createNode(int nodeType, AstNode *left, AstNode *right, char *value) {
@@ -1819,6 +1821,12 @@ void checkUndeclaredVariable(char *name) {
     if (findSymbol(name) == NULL) {
         fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
         exit(1);
+    }
+}
+
+void declareVariable(char *name) {
+    if (findSymbol(name) == NULL) {
+        insertSymbol(name, 0);
     }
 }
 

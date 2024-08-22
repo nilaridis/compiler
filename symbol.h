@@ -12,6 +12,7 @@ void insertSymbol(char *name, int value);
 Symbol *findSymbol(char *name);
 void printSymbolTable();
 void checkUndeclaredVariable(char *name); 
+void declareVariable(char *name);
 
 
 
