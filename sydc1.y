@@ -48,6 +48,7 @@ stmt:
 
 assign_stmt:
     ID ASSIGN exp {
+        checkUndeclaredVariable($1);
          Symbol *symbol = findSymbol($1);
         if (symbol == NULL) {
             insertSymbol($1, $3->value ? atoi($3->value) : 0);
@@ -122,6 +123,7 @@ factor:
         $$ = createNode('N', NULL, NULL, strdup(buffer)); 
     }
     | ID {
+        checkUndeclaredVariable($1);
         Symbol *symbol = findSymbol($1);
         if (symbol != NULL) {
             char buffer[100];
@@ -182,6 +184,13 @@ Symbol *findSymbol(char *name) {
         current = current->next;
     }
     return NULL;
+}
+
+void checkUndeclaredVariable(char *name) {
+    if (findSymbol(name) == NULL) {
+        fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
+        exit(1);
+    }
 }
 
 void printSymbolTable() {

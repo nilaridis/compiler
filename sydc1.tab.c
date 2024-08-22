@@ -448,8 +448,8 @@ static const yytype_int8 yyrhs[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    33,    33,    37,    38,    42,    43,    44,    45,    46,
-      50,    63,    64,    68,    72,    83,    96,   101,   102,   103,
-     107,   108,   109,   113,   114,   115,   119,   124,   134
+      50,    64,    65,    69,    73,    84,    97,   102,   103,   104,
+     108,   109,   110,   114,   115,   116,   120,   125,   136
 };
 #endif
 
@@ -1402,6 +1402,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 50 "sydc1.y"
     {
+        checkUndeclaredVariable((yyvsp[(1) - (3)].ystr));
          Symbol *symbol = findSymbol((yyvsp[(1) - (3)].ystr));
         if (symbol == NULL) {
             insertSymbol((yyvsp[(1) - (3)].ystr), (yyvsp[(3) - (3)].node)->value ? atoi((yyvsp[(3) - (3)].node)->value) : 0);
@@ -1416,28 +1417,28 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 63 "sydc1.y"
+#line 64 "sydc1.y"
     { (yyval.node) = createNode('I', (yyvsp[(2) - (5)].node), (yyvsp[(4) - (5)].node), NULL); ;}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 64 "sydc1.y"
+#line 65 "sydc1.y"
     { (yyval.node) = createNode('I', (yyvsp[(2) - (7)].node), createNode('E', (yyvsp[(4) - (7)].node), (yyvsp[(6) - (7)].node), NULL), NULL); ;}
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 68 "sydc1.y"
+#line 69 "sydc1.y"
     { (yyval.node) = createNode('R', (yyvsp[(2) - (4)].node), (yyvsp[(4) - (4)].node), NULL); ;}
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 72 "sydc1.y"
+#line 73 "sydc1.y"
     {
         Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
         if (symbol == NULL) {
@@ -1451,7 +1452,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 83 "sydc1.y"
+#line 84 "sydc1.y"
     {
          Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
         if (symbol != NULL) {
@@ -1467,56 +1468,56 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 96 "sydc1.y"
+#line 97 "sydc1.y"
     {(yyval.node) = (yyvsp[(1) - (1)].node);;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 102 "sydc1.y"
+#line 103 "sydc1.y"
     { (yyval.node) = createNode('<', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 103 "sydc1.y"
+#line 104 "sydc1.y"
     { (yyval.node) = createNode('=', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 108 "sydc1.y"
+#line 109 "sydc1.y"
     { (yyval.node) = createNode('+', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 109 "sydc1.y"
+#line 110 "sydc1.y"
     { (yyval.node) = createNode('-', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 114 "sydc1.y"
+#line 115 "sydc1.y"
     { (yyval.node) = createNode('*', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 115 "sydc1.y"
+#line 116 "sydc1.y"
     { (yyval.node) = createNode('/', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 119 "sydc1.y"
+#line 120 "sydc1.y"
     { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", (yyvsp[(1) - (1)].yint));
@@ -1527,8 +1528,9 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 124 "sydc1.y"
+#line 125 "sydc1.y"
     {
+        checkUndeclaredVariable((yyvsp[(1) - (1)].ystr));
         Symbol *symbol = findSymbol((yyvsp[(1) - (1)].ystr));
         if (symbol != NULL) {
             char buffer[100];
@@ -1543,14 +1545,14 @@ yyreduce:
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 134 "sydc1.y"
+#line 136 "sydc1.y"
     { (yyval.node) = (yyvsp[(2) - (3)].node); ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1554 "sydc1.tab.c"
+#line 1556 "sydc1.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1762,7 +1764,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 137 "sydc1.y"
+#line 139 "sydc1.y"
 
 
 AstNode *createNode(int nodeType, AstNode *left, AstNode *right, char *value) {
@@ -1811,6 +1813,13 @@ Symbol *findSymbol(char *name) {
         current = current->next;
     }
     return NULL;
+}
+
+void checkUndeclaredVariable(char *name) {
+    if (findSymbol(name) == NULL) {
+        fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
+        exit(1);
+    }
 }
 
 void printSymbolTable() {
