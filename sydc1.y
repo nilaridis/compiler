@@ -19,7 +19,7 @@
 
 %token <yint> DEC_CONST
 %token <ystr> ID
-%token ELSE THEN IF WRITE READ REPEAT UNTIL END
+%token IF THEN ELSE WRITE READ REPEAT UNTIL END
 %token EQ
 %token ASSIGN LT
 %token <ystr> '(' ')' ';'
@@ -50,12 +50,13 @@ assign_stmt:
     ID ASSIGN exp {
         declareVariable($1);
          Symbol *symbol = findSymbol($1);
+         int value = evaluateExpression($3);
         if (symbol == NULL) {
-            insertSymbol($1, $3->value ? atoi($3->value) : 0);
+            insertSymbol($1, value);
         } else {
-            symbol->value = $3->value ? atoi($3->value) : 0;
+            symbol->value = value;
         }
-         
+         printf("Assigned %d to %s\n", value, $1);
          $$ = createNode('=', createNode('I', NULL, NULL, $1), $3, NULL); 
     }
     ;
@@ -125,16 +126,10 @@ factor:
         $$ = createNode('N', NULL, NULL, strdup(buffer)); 
     }
     | ID {
-        checkUndeclaredVariable($1);
-        Symbol *symbol = findSymbol($1);
-        if (symbol != NULL) {
-            char buffer[100];
-            snprintf(buffer, sizeof(buffer), "%d", symbol->value);
-            $$ = createNode('I', NULL, NULL, strdup(buffer));
-        } else {
-            $$ = createNode('I', NULL, NULL, strdup($1));
-        }
+    checkUndeclaredVariable($1);
+    $$ = createNode('I', NULL, NULL, strdup($1));
     }
+
     | '(' exp ')' { $$ = $2; }
     ;
 
@@ -211,6 +206,33 @@ void printSymbolTable() {
         current = current->next;
     }
 }
+
+int evaluateExpression(AstNode *node) {
+    if (node == NULL) return 0;
+    switch (node->nodeType) {
+        case 'N': // Number
+            return atoi(node->value);
+        case 'I': { // Identifier
+            Symbol *symbol = findSymbol(node->value);
+            return symbol ? symbol->value : 0;
+        }
+        case '+':
+            return evaluateExpression(node->left) + evaluateExpression(node->right);
+        case '-':
+            return evaluateExpression(node->left) - evaluateExpression(node->right);
+        case '*':
+            return evaluateExpression(node->left) * evaluateExpression(node->right);
+        case '/':
+            return evaluateExpression(node->left) / evaluateExpression(node->right);
+        case '<':
+            return evaluateExpression(node->left) < evaluateExpression(node->right);
+        case '=':
+            return evaluateExpression(node->left) == evaluateExpression(node->right);
+        default:
+            return 0;
+    }
+}
+
 
 
 int main() {

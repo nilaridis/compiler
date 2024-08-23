@@ -41,9 +41,9 @@
    enum yytokentype {
      DEC_CONST = 258,
      ID = 259,
-     ELSE = 260,
+     IF = 260,
      THEN = 261,
-     IF = 262,
+     ELSE = 262,
      WRITE = 263,
      READ = 264,
      REPEAT = 265,

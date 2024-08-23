@@ -112,9 +112,9 @@
    enum yytokentype {
      DEC_CONST = 258,
      ID = 259,
-     ELSE = 260,
+     IF = 260,
      THEN = 261,
-     IF = 262,
+     ELSE = 262,
      WRITE = 263,
      READ = 264,
      REPEAT = 265,
@@ -435,8 +435,8 @@ static const yytype_int8 yyrhs[] =
 {
       24,     0,    -1,    25,    -1,    25,    18,    26,    -1,    26,
       -1,    27,    -1,    28,    -1,    29,    -1,    30,    -1,    31,
-      -1,     4,    14,    32,    -1,     7,    32,     6,    25,    12,
-      -1,     7,    32,     6,    25,     5,    25,    12,    -1,    10,
+      -1,     4,    14,    32,    -1,     5,    32,     6,    25,    12,
+      -1,     5,    32,     6,    25,     7,    25,    12,    -1,    10,
       25,    11,    32,    -1,     9,     4,    -1,     8,     4,    -1,
       33,    -1,    34,    -1,    34,    15,    34,    -1,    34,    13,
       34,    -1,    35,    -1,    34,    19,    35,    -1,    34,    20,
@@ -448,8 +448,8 @@ static const yytype_int8 yyrhs[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    33,    33,    37,    38,    42,    43,    44,    45,    46,
-      50,    64,    65,    69,    73,    85,    99,   104,   105,   106,
-     110,   111,   112,   116,   117,   118,   122,   127,   138
+      50,    65,    66,    70,    74,    86,   100,   105,   106,   107,
+     111,   112,   113,   117,   118,   119,   123,   128,   133
 };
 #endif
 
@@ -458,7 +458,7 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "DEC_CONST", "ID", "ELSE", "THEN", "IF",
+  "$end", "error", "$undefined", "DEC_CONST", "ID", "IF", "THEN", "ELSE",
   "WRITE", "READ", "REPEAT", "UNTIL", "END", "EQ", "ASSIGN", "LT", "'('",
   "')'", "';'", "'+'", "'-'", "'*'", "'/'", "$accept", "program",
   "stmt_seq", "stmt", "assign_stmt", "if_stmt", "repeat_stmt", "read_stmt",
@@ -518,19 +518,19 @@ static const yytype_int8 yydefgoto[] =
 #define YYPACT_NINF -14
 static const yytype_int8 yypact[] =
 {
-      22,    -8,    -1,     4,    13,    22,    28,    19,   -14,   -14,
-     -14,   -14,   -14,   -14,    -1,   -14,   -14,    -1,    16,   -14,
-      -6,   -11,   -14,   -14,   -14,     5,   -14,    22,   -14,    23,
-      22,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   -14,   -14,
-       0,    14,    14,   -11,   -11,   -14,   -14,   -14,    22,   -14,
-       9,   -14
+      13,    -3,    -1,     5,    15,    13,    33,    18,   -14,   -14,
+     -14,   -14,   -14,   -14,    -1,   -14,   -14,    -1,    34,   -14,
+      -7,     6,   -14,   -14,   -14,    -4,   -14,    13,   -14,    22,
+      13,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   -14,   -14,
+      -2,    10,    10,     6,     6,   -14,   -14,   -14,    13,   -14,
+       8,   -14
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -14,   -14,    -5,    15,   -14,   -14,   -14,   -14,   -14,   -13,
-     -14,   -12,     2,     3
+     -14,   -14,    -5,    14,   -14,   -14,   -14,   -14,   -14,   -13,
+     -14,     0,     1,     2
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -540,31 +540,31 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      25,    28,    15,    16,    29,    48,    14,    31,    23,    32,
-      35,    36,    49,    33,    34,    17,    37,    24,    27,    41,
-      42,    51,    30,    27,    47,    40,     1,    27,    26,     2,
-       3,     4,     5,    33,    34,    43,    44,    27,    45,    46,
-      39,     0,    38,    50
+      25,    28,    15,    16,    29,    48,    31,    37,    32,    23,
+      49,    14,    33,    34,    27,    17,    27,     1,     2,    24,
+      51,     3,     4,     5,    47,    40,    27,    35,    36,    33,
+      34,    41,    42,    26,    43,    44,    27,    45,    46,    39,
+      30,    38,     0,    50
 };
 
 static const yytype_int8 yycheck[] =
 {
-       5,    14,     3,     4,    17,     5,    14,    13,     4,    15,
-      21,    22,    12,    19,    20,    16,    11,     4,    18,    31,
-      32,    12,     6,    18,    37,    30,     4,    18,     0,     7,
-       8,     9,    10,    19,    20,    33,    34,    18,    35,    36,
-      17,    -1,    27,    48
+       5,    14,     3,     4,    17,     7,    13,    11,    15,     4,
+      12,    14,    19,    20,    18,    16,    18,     4,     5,     4,
+      12,     8,     9,    10,    37,    30,    18,    21,    22,    19,
+      20,    31,    32,     0,    33,    34,    18,    35,    36,    17,
+       6,    27,    -1,    48
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     4,     7,     8,     9,    10,    24,    25,    26,    27,
+       0,     4,     5,     8,     9,    10,    24,    25,    26,    27,
       28,    29,    30,    31,    14,     3,     4,    16,    32,    33,
       34,    35,    36,     4,     4,    25,     0,    18,    32,    32,
        6,    13,    15,    19,    20,    21,    22,    11,    26,    17,
-      25,    34,    34,    35,    35,    36,    36,    32,     5,    12,
+      25,    34,    34,    35,    35,    36,    36,    32,     7,    12,
       25,    12
 };
 
@@ -1404,12 +1404,13 @@ yyreduce:
     {
         declareVariable((yyvsp[(1) - (3)].ystr));
          Symbol *symbol = findSymbol((yyvsp[(1) - (3)].ystr));
+         int value = evaluateExpression((yyvsp[(3) - (3)].node));
         if (symbol == NULL) {
-            insertSymbol((yyvsp[(1) - (3)].ystr), (yyvsp[(3) - (3)].node)->value ? atoi((yyvsp[(3) - (3)].node)->value) : 0);
+            insertSymbol((yyvsp[(1) - (3)].ystr), value);
         } else {
-            symbol->value = (yyvsp[(3) - (3)].node)->value ? atoi((yyvsp[(3) - (3)].node)->value) : 0;
+            symbol->value = value;
         }
-         
+         printf("Assigned %d to %s\n", value, (yyvsp[(1) - (3)].ystr));
          (yyval.node) = createNode('=', createNode('I', NULL, NULL, (yyvsp[(1) - (3)].ystr)), (yyvsp[(3) - (3)].node), NULL); 
     ;}
     break;
@@ -1417,28 +1418,28 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 64 "sydc1.y"
+#line 65 "sydc1.y"
     { (yyval.node) = createNode('I', (yyvsp[(2) - (5)].node), (yyvsp[(4) - (5)].node), NULL); ;}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 65 "sydc1.y"
+#line 66 "sydc1.y"
     { (yyval.node) = createNode('I', (yyvsp[(2) - (7)].node), createNode('E', (yyvsp[(4) - (7)].node), (yyvsp[(6) - (7)].node), NULL), NULL); ;}
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 69 "sydc1.y"
+#line 70 "sydc1.y"
     { (yyval.node) = createNode('R', (yyvsp[(2) - (4)].node), (yyvsp[(4) - (4)].node), NULL); ;}
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 73 "sydc1.y"
+#line 74 "sydc1.y"
     {
         declareVariable((yyvsp[(2) - (2)].ystr));
         Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
@@ -1453,7 +1454,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 85 "sydc1.y"
+#line 86 "sydc1.y"
     {
         checkUndeclaredVariable((yyvsp[(2) - (2)].ystr));
          Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
@@ -1470,56 +1471,56 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 99 "sydc1.y"
+#line 100 "sydc1.y"
     {(yyval.node) = (yyvsp[(1) - (1)].node);;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 105 "sydc1.y"
+#line 106 "sydc1.y"
     { (yyval.node) = createNode('<', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 106 "sydc1.y"
+#line 107 "sydc1.y"
     { (yyval.node) = createNode('=', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 111 "sydc1.y"
+#line 112 "sydc1.y"
     { (yyval.node) = createNode('+', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 112 "sydc1.y"
+#line 113 "sydc1.y"
     { (yyval.node) = createNode('-', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 117 "sydc1.y"
+#line 118 "sydc1.y"
     { (yyval.node) = createNode('*', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 118 "sydc1.y"
+#line 119 "sydc1.y"
     { (yyval.node) = createNode('/', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 122 "sydc1.y"
+#line 123 "sydc1.y"
     { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", (yyvsp[(1) - (1)].yint));
@@ -1530,31 +1531,24 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 127 "sydc1.y"
+#line 128 "sydc1.y"
     {
-        checkUndeclaredVariable((yyvsp[(1) - (1)].ystr));
-        Symbol *symbol = findSymbol((yyvsp[(1) - (1)].ystr));
-        if (symbol != NULL) {
-            char buffer[100];
-            snprintf(buffer, sizeof(buffer), "%d", symbol->value);
-            (yyval.node) = createNode('I', NULL, NULL, strdup(buffer));
-        } else {
-            (yyval.node) = createNode('I', NULL, NULL, strdup((yyvsp[(1) - (1)].ystr)));
-        }
+    checkUndeclaredVariable((yyvsp[(1) - (1)].ystr));
+    (yyval.node) = createNode('I', NULL, NULL, strdup((yyvsp[(1) - (1)].ystr)));
     ;}
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 138 "sydc1.y"
+#line 133 "sydc1.y"
     { (yyval.node) = (yyvsp[(2) - (3)].node); ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1558 "sydc1.tab.c"
+#line 1552 "sydc1.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1766,7 +1760,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 141 "sydc1.y"
+#line 136 "sydc1.y"
 
 
 AstNode *createNode(int nodeType, AstNode *left, AstNode *right, char *value) {
@@ -1840,6 +1834,33 @@ void printSymbolTable() {
         current = current->next;
     }
 }
+
+int evaluateExpression(AstNode *node) {
+    if (node == NULL) return 0;
+    switch (node->nodeType) {
+        case 'N': // Number
+            return atoi(node->value);
+        case 'I': { // Identifier
+            Symbol *symbol = findSymbol(node->value);
+            return symbol ? symbol->value : 0;
+        }
+        case '+':
+            return evaluateExpression(node->left) + evaluateExpression(node->right);
+        case '-':
+            return evaluateExpression(node->left) - evaluateExpression(node->right);
+        case '*':
+            return evaluateExpression(node->left) * evaluateExpression(node->right);
+        case '/':
+            return evaluateExpression(node->left) / evaluateExpression(node->right);
+        case '<':
+            return evaluateExpression(node->left) < evaluateExpression(node->right);
+        case '=':
+            return evaluateExpression(node->left) == evaluateExpression(node->right);
+        default:
+            return 0;
+    }
+}
+
 
 
 int main() {

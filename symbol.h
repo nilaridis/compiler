@@ -13,6 +13,7 @@ Symbol *findSymbol(char *name);
 void printSymbolTable();
 void checkUndeclaredVariable(char *name); 
 void declareVariable(char *name);
+int evaluateExpression(AstNode *node);
 
 
 
