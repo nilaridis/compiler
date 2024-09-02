@@ -62,7 +62,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 14 "sydc1.y"
+#line 16 "sydc1.y"
 
   int yint;
   char ystr[100];

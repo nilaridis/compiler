@@ -1,0 +1,8 @@
+x:=4;
+if 30<x then 
+    fact:=6
+else
+    fact:=10;
+    x:=x-1
+end;
+write fact

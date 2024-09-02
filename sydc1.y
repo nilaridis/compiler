@@ -50,7 +50,6 @@ stmt:
 
 assign_stmt:
     ID ASSIGN exp {
-        declareVariable($1);  // Δήλωση της μεταβλητής κατά τη δημιουργία του δέντρου
         $$ = createNode('=', createNode('I', NULL, NULL, $1), $3, NULL); 
     }
     ;
@@ -70,24 +69,12 @@ repeat_stmt:
 
 read_stmt:
     READ ID {
-        declareVariable($2);
-        Symbol *symbol = findSymbol($2);
-        if (symbol == NULL) {
-            insertSymbol($2, 0);
-        }
-        $$ = createNode('R', NULL, NULL, strdup($2)); 
+        $$ = createNode('L', NULL, NULL, strdup($2)); // Δημιουργία κόμβου Load
     }
     ;
 
 write_stmt:
     WRITE ID {
-        checkUndeclaredVariable($2);
-        Symbol *symbol = findSymbol($2);
-        if (symbol != NULL) {
-            printf("Value of %s: %d\n", $2, symbol->value);
-        } else {
-            printf("Undefined variable %s\n", $2);
-        }
         $$ = createNode('W', NULL, NULL, strdup($2)); 
     }
     ;
@@ -122,7 +109,6 @@ factor:
         $$ = createNode('N', NULL, NULL, strdup(buffer)); 
     }
     | ID {
-        checkUndeclaredVariable($1);
         $$ = createNode('I', NULL, NULL, strdup($1));
     }
     | '(' exp ')' { $$ = $2; }
@@ -178,19 +164,26 @@ Symbol *findSymbol(char *name) {
     return NULL;
 }
 
-void checkUndeclaredVariable(char *name) {
-    if (findSymbol(name) == NULL) {
-        fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
-        exit(1);
-    }
-}
-
 void declareVariable(char *name) {
     if (findSymbol(name) == NULL) {
         insertSymbol(name, 0); // Προσθήκη της μεταβλητής με αρχική τιμή 0
     }
 }
 
+void undeclareVariable(char *name) {
+    Symbol **current = &symbolTable;
+    while (*current != NULL) {
+        if (strcmp((*current)->name, name) == 0) {
+            Symbol *temp = *current;
+            *current = (*current)->next;
+            free(temp->name);
+            free(temp);
+            printf("Undeclared variable %s\n", name);
+            return;
+        }
+        current = &((*current)->next);
+    }
+}
 
 void printSymbolTable() {
     Symbol *current = symbolTable;
@@ -243,22 +236,39 @@ void executeNode(AstNode *node) {
             break;
         }
         case '=': { // Assignment
+            // Έλεγχος αν η μεταβλητή έχει δηλωθεί
+            if (findSymbol(node->left->value) == NULL) {
+                declareVariable(node->left->value); // Δήλωση της μεταβλητής αν δεν έχει δηλωθεί
+            }
             Symbol *symbol = findSymbol(node->left->value);
             if (symbol != NULL) {
                 symbol->value = evaluateExpression(node->right);
                 printf("Assigned %d to %s\n", symbol->value, node->left->value);
-            } else {
-                // Αν η μεταβλητή δεν βρεθεί, την εισάγουμε στον πίνακα συμβόλων
-                insertSymbol(node->left->value, evaluateExpression(node->right));
-                printf("Assigned %d to %s\n", evaluateExpression(node->right), node->left->value);
             }
             break;
         }
-        case 'R': { // Read statement
-            // Δεδομένου ότι το διάβασμα είναι προσομοιωμένο, δεν εκτελούμε τίποτα εδώ
+        case 'R': { // Repeat statement
+            do {
+                executeNode(node->left); // Εκτέλεση του μπλοκ εντολών
+            } while (!evaluateExpression(node->right)); // Επανάληψη έως ότου η συνθήκη γίνει true
+            break;
+        }
+        case 'L': { // Read statement (χρήση του 'L' για τη read)
+            // Δήλωση της μεταβλητής αν δεν υπάρχει
+            if (findSymbol(node->value) == NULL) {
+                declareVariable(node->value);
+            }
+            Symbol *symbol = findSymbol(node->value);
+            // Μπορείτε να προσθέσετε εδώ λογική για ανάγνωση τιμής από τον χρήστη αν χρειάζεται.
+            printf("Reading value for %s\n", node->value);
             break;
         }
         case 'W': { // Write statement
+            // Έλεγχος αν η μεταβλητή έχει δηλωθεί πριν την εκτύπωση
+            if (findSymbol(node->value) == NULL) {
+                fprintf(stderr, "Semantic Error: Undeclared variable %s\n", node->value);
+                exit(1);
+            }
             Symbol *symbol = findSymbol(node->value);
             if (symbol != NULL) {
                 printf("Value of %s: %d\n", node->value, symbol->value);
@@ -270,13 +280,6 @@ void executeNode(AstNode *node) {
             executeNode(node->right);
             break;
         }
-        case '*':
-        case '/':
-        case '+':
-        case '-': {
-            // Εκτέλεση των μαθηματικών πράξεων αν χρειαστεί
-            break;
-        }
         default:
             printf("Unknown node type: %c\n", node->nodeType);
             break;
@@ -284,9 +287,16 @@ void executeNode(AstNode *node) {
 }
 
 
+
+
+
+
 int main() {
-    yyparse();
-    executeNode(root); // Χρήση της παγκόσμιας μεταβλητής root
-    printSymbolTable();
+    yyparse();  // Παρσάρισμα του εισερχόμενου κώδικα για να δημιουργηθεί το AST
+    printf("Syntax Tree:\n");
+    printTree(root, 0);  // Εκτύπωση του συντακτικού δέντρου ξεκινώντας από τη ρίζα
+    printf("\nExecuting program:\n");
+    executeNode(root);  // Εκτέλεση του AST χρησιμοποιώντας τη ρίζα
+    printSymbolTable();  // Εκτύπωση του πίνακα συμβόλων μετά την εκτέλεση
     return 0;
 }

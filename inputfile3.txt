@@ -1,0 +1,6 @@
+x:=4;
+fact := 10;
+if 0<x then 
+    fact:=6
+end;
+write fact

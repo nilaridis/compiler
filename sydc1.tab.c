@@ -77,13 +77,15 @@
     #include "symbol.h"
 
     Symbol *symbolTable = NULL;
+    struct AstNode *root = NULL;
 
     void yyerror(const char *s);
     int yylex(void);
+    void executeNode(struct AstNode *node);
 
 
 /* Line 189 of yacc.c  */
-#line 87 "sydc1.tab.c"
+#line 89 "sydc1.tab.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -133,7 +135,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 14 "sydc1.y"
+#line 16 "sydc1.y"
 
   int yint;
   char ystr[100];
@@ -142,7 +144,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 146 "sydc1.tab.c"
+#line 148 "sydc1.tab.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -154,7 +156,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 158 "sydc1.tab.c"
+#line 160 "sydc1.tab.c"
 
 #ifdef short
 # undef short
@@ -447,9 +449,9 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    33,    33,    37,    38,    42,    43,    44,    45,    46,
-      50,    65,    66,    70,    74,    86,   100,   105,   106,   107,
-     111,   112,   113,   117,   118,   119,   123,   128,   133
+       0,    35,    35,    39,    40,    44,    45,    46,    47,    48,
+      52,    58,    61,    67,    71,    77,    83,    88,    89,    90,
+      94,    95,    96,   100,   101,   102,   106,   111,   114
 };
 #endif
 
@@ -1379,148 +1381,129 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 33 "sydc1.y"
-    { printTree((yyvsp[(1) - (1)].node), 0); ;}
+#line 35 "sydc1.y"
+    { root = (yyvsp[(1) - (1)].node); ;}
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 37 "sydc1.y"
+#line 39 "sydc1.y"
     { (yyval.node) = createNode(';', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 38 "sydc1.y"
+#line 40 "sydc1.y"
     { (yyval.node) = (yyvsp[(1) - (1)].node); ;}
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 50 "sydc1.y"
+#line 52 "sydc1.y"
     {
-        declareVariable((yyvsp[(1) - (3)].ystr));
-         Symbol *symbol = findSymbol((yyvsp[(1) - (3)].ystr));
-         int value = evaluateExpression((yyvsp[(3) - (3)].node));
-        if (symbol == NULL) {
-            insertSymbol((yyvsp[(1) - (3)].ystr), value);
-        } else {
-            symbol->value = value;
-        }
-         printf("Assigned %d to %s\n", value, (yyvsp[(1) - (3)].ystr));
-         (yyval.node) = createNode('=', createNode('I', NULL, NULL, (yyvsp[(1) - (3)].ystr)), (yyvsp[(3) - (3)].node), NULL); 
+        (yyval.node) = createNode('=', createNode('I', NULL, NULL, (yyvsp[(1) - (3)].ystr)), (yyvsp[(3) - (3)].node), NULL); 
     ;}
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 65 "sydc1.y"
-    { (yyval.node) = createNode('I', (yyvsp[(2) - (5)].node), (yyvsp[(4) - (5)].node), NULL); ;}
+#line 58 "sydc1.y"
+    { 
+        (yyval.node) = createNode('I', (yyvsp[(2) - (5)].node), (yyvsp[(4) - (5)].node), NULL); // Δημιουργία κόμβου if
+    ;}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 66 "sydc1.y"
-    { (yyval.node) = createNode('I', (yyvsp[(2) - (7)].node), createNode('E', (yyvsp[(4) - (7)].node), (yyvsp[(6) - (7)].node), NULL), NULL); ;}
+#line 61 "sydc1.y"
+    { 
+        (yyval.node) = createNode('I', (yyvsp[(2) - (7)].node), createNode('E', (yyvsp[(4) - (7)].node), (yyvsp[(6) - (7)].node), NULL), NULL); // Δημιουργία κόμβου if-else
+    ;}
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 70 "sydc1.y"
+#line 67 "sydc1.y"
     { (yyval.node) = createNode('R', (yyvsp[(2) - (4)].node), (yyvsp[(4) - (4)].node), NULL); ;}
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 74 "sydc1.y"
+#line 71 "sydc1.y"
     {
-        declareVariable((yyvsp[(2) - (2)].ystr));
-        Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
-        if (symbol == NULL) {
-            insertSymbol((yyvsp[(2) - (2)].ystr), 0);
-        }
-
-         (yyval.node) = createNode('R', NULL, NULL, strdup((yyvsp[(2) - (2)].ystr))); 
+        (yyval.node) = createNode('L', NULL, NULL, strdup((yyvsp[(2) - (2)].ystr))); // Δημιουργία κόμβου Load
     ;}
     break;
 
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 86 "sydc1.y"
+#line 77 "sydc1.y"
     {
-        checkUndeclaredVariable((yyvsp[(2) - (2)].ystr));
-         Symbol *symbol = findSymbol((yyvsp[(2) - (2)].ystr));
-        if (symbol != NULL) {
-            printf("Value of %s: %d\n", (yyvsp[(2) - (2)].ystr), symbol->value);
-        } else {
-            printf("Undefined variable %s\n", (yyvsp[(2) - (2)].ystr));
-        }
-         
-         (yyval.node) = createNode('W', NULL, NULL, strdup((yyvsp[(2) - (2)].ystr))); 
+        (yyval.node) = createNode('W', NULL, NULL, strdup((yyvsp[(2) - (2)].ystr))); 
     ;}
     break;
 
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 100 "sydc1.y"
-    {(yyval.node) = (yyvsp[(1) - (1)].node);;}
+#line 83 "sydc1.y"
+    { (yyval.node) = (yyvsp[(1) - (1)].node); ;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 106 "sydc1.y"
+#line 89 "sydc1.y"
     { (yyval.node) = createNode('<', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 107 "sydc1.y"
+#line 90 "sydc1.y"
     { (yyval.node) = createNode('=', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 112 "sydc1.y"
+#line 95 "sydc1.y"
     { (yyval.node) = createNode('+', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 113 "sydc1.y"
+#line 96 "sydc1.y"
     { (yyval.node) = createNode('-', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 118 "sydc1.y"
+#line 101 "sydc1.y"
     { (yyval.node) = createNode('*', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 119 "sydc1.y"
+#line 102 "sydc1.y"
     { (yyval.node) = createNode('/', (yyvsp[(1) - (3)].node), (yyvsp[(3) - (3)].node), NULL); ;}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 123 "sydc1.y"
+#line 106 "sydc1.y"
     { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", (yyvsp[(1) - (1)].yint));
@@ -1531,24 +1514,23 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 128 "sydc1.y"
+#line 111 "sydc1.y"
     {
-    checkUndeclaredVariable((yyvsp[(1) - (1)].ystr));
-    (yyval.node) = createNode('I', NULL, NULL, strdup((yyvsp[(1) - (1)].ystr)));
+        (yyval.node) = createNode('I', NULL, NULL, strdup((yyvsp[(1) - (1)].ystr)));
     ;}
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 133 "sydc1.y"
+#line 114 "sydc1.y"
     { (yyval.node) = (yyvsp[(2) - (3)].node); ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1552 "sydc1.tab.c"
+#line 1534 "sydc1.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1760,7 +1742,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 136 "sydc1.y"
+#line 117 "sydc1.y"
 
 
 AstNode *createNode(int nodeType, AstNode *left, AstNode *right, char *value) {
@@ -1811,16 +1793,24 @@ Symbol *findSymbol(char *name) {
     return NULL;
 }
 
-void checkUndeclaredVariable(char *name) {
+void declareVariable(char *name) {
     if (findSymbol(name) == NULL) {
-        fprintf(stderr, "Semantic Error: Undeclared variable %s\n", name);
-        exit(1);
+        insertSymbol(name, 0); // Προσθήκη της μεταβλητής με αρχική τιμή 0
     }
 }
 
-void declareVariable(char *name) {
-    if (findSymbol(name) == NULL) {
-        insertSymbol(name, 0);
+void undeclareVariable(char *name) {
+    Symbol **current = &symbolTable;
+    while (*current != NULL) {
+        if (strcmp((*current)->name, name) == 0) {
+            Symbol *temp = *current;
+            *current = (*current)->next;
+            free(temp->name);
+            free(temp);
+            printf("Undeclared variable %s\n", name);
+            return;
+        }
+        current = &((*current)->next);
     }
 }
 
@@ -1861,10 +1851,81 @@ int evaluateExpression(AstNode *node) {
     }
 }
 
+void executeNode(AstNode *node) {
+    if (node == NULL) return;
+
+    switch (node->nodeType) {
+        case 'I': { // If statement
+            int cond = evaluateExpression(node->left); // Αξιολόγηση της συνθήκης
+            if (cond) {
+                executeNode(node->right); // Εκτέλεση του THEN μπλοκ
+            } else if (node->right && node->right->nodeType == 'E') {
+                executeNode(node->right->right); // Εκτέλεση του ELSE μπλοκ αν υπάρχει
+            }
+            break;
+        }
+        case '=': { // Assignment
+            // Έλεγχος αν η μεταβλητή έχει δηλωθεί
+            if (findSymbol(node->left->value) == NULL) {
+                declareVariable(node->left->value); // Δήλωση της μεταβλητής αν δεν έχει δηλωθεί
+            }
+            Symbol *symbol = findSymbol(node->left->value);
+            if (symbol != NULL) {
+                symbol->value = evaluateExpression(node->right);
+                printf("Assigned %d to %s\n", symbol->value, node->left->value);
+            }
+            break;
+        }
+        case 'R': { // Repeat statement
+            do {
+                executeNode(node->left); // Εκτέλεση του μπλοκ εντολών
+            } while (!evaluateExpression(node->right)); // Επανάληψη έως ότου η συνθήκη γίνει true
+            break;
+        }
+        case 'L': { // Read statement (χρήση του 'L' για τη read)
+            // Δήλωση της μεταβλητής αν δεν υπάρχει
+            if (findSymbol(node->value) == NULL) {
+                declareVariable(node->value);
+            }
+            Symbol *symbol = findSymbol(node->value);
+            // Μπορείτε να προσθέσετε εδώ λογική για ανάγνωση τιμής από τον χρήστη αν χρειάζεται.
+            printf("Reading value for %s\n", node->value);
+            break;
+        }
+        case 'W': { // Write statement
+            // Έλεγχος αν η μεταβλητή έχει δηλωθεί πριν την εκτύπωση
+            if (findSymbol(node->value) == NULL) {
+                fprintf(stderr, "Semantic Error: Undeclared variable %s\n", node->value);
+                exit(1);
+            }
+            Symbol *symbol = findSymbol(node->value);
+            if (symbol != NULL) {
+                printf("Value of %s: %d\n", node->value, symbol->value);
+            }
+            break;
+        }
+        case ';': { // Sequence of statements
+            executeNode(node->left);
+            executeNode(node->right);
+            break;
+        }
+        default:
+            printf("Unknown node type: %c\n", node->nodeType);
+            break;
+    }
+}
+
+
+
+
 
 
 int main() {
-    yyparse();
-    printSymbolTable();
+    yyparse();  // Παρσάρισμα του εισερχόμενου κώδικα για να δημιουργηθεί το AST
+    printf("Syntax Tree:\n");
+    printTree(root, 0);  // Εκτύπωση του συντακτικού δέντρου ξεκινώντας από τη ρίζα
+    printf("\nExecuting program:\n");
+    executeNode(root);  // Εκτέλεση του AST χρησιμοποιώντας τη ρίζα
+    printSymbolTable();  // Εκτύπωση του πίνακα συμβόλων μετά την εκτέλεση
     return 0;
 }
