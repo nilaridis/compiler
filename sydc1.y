@@ -6,12 +6,14 @@
     #include "symbol.h"
 
     Symbol *symbolTable = NULL;
+    struct AstNode *root = NULL;
 
     void yyerror(const char *s);
     int yylex(void);
+    void executeNode(struct AstNode *node);
 %}
 
-%union{
+%union {
   int yint;
   char ystr[100];
   struct AstNode *node;
@@ -30,7 +32,7 @@
 %%
 
 program:
-    stmt_seq { printTree($1, 0); }
+    stmt_seq { root = $1; }  // Αποθηκεύουμε τη ρίζα του δέντρου στην παγκόσμια μεταβλητή root
     ;
 
 stmt_seq:
@@ -48,22 +50,18 @@ stmt:
 
 assign_stmt:
     ID ASSIGN exp {
-        declareVariable($1);
-         Symbol *symbol = findSymbol($1);
-         int value = evaluateExpression($3);
-        if (symbol == NULL) {
-            insertSymbol($1, value);
-        } else {
-            symbol->value = value;
-        }
-         printf("Assigned %d to %s\n", value, $1);
-         $$ = createNode('=', createNode('I', NULL, NULL, $1), $3, NULL); 
+        declareVariable($1);  // Δήλωση της μεταβλητής κατά τη δημιουργία του δέντρου
+        $$ = createNode('=', createNode('I', NULL, NULL, $1), $3, NULL); 
     }
     ;
 
 if_stmt:
-    IF exp THEN stmt_seq END { $$ = createNode('I', $2, $4, NULL); }
-    | IF exp THEN stmt_seq ELSE stmt_seq END { $$ = createNode('I', $2, createNode('E', $4, $6, NULL), NULL); }
+    IF exp THEN stmt_seq END { 
+        $$ = createNode('I', $2, $4, NULL); // Δημιουργία κόμβου if
+    }
+    | IF exp THEN stmt_seq ELSE stmt_seq END { 
+        $$ = createNode('I', $2, createNode('E', $4, $6, NULL), NULL); // Δημιουργία κόμβου if-else
+    }
     ;
 
 repeat_stmt:
@@ -77,28 +75,26 @@ read_stmt:
         if (symbol == NULL) {
             insertSymbol($2, 0);
         }
-
-         $$ = createNode('R', NULL, NULL, strdup($2)); 
+        $$ = createNode('R', NULL, NULL, strdup($2)); 
     }
     ;
 
 write_stmt:
     WRITE ID {
         checkUndeclaredVariable($2);
-         Symbol *symbol = findSymbol($2);
+        Symbol *symbol = findSymbol($2);
         if (symbol != NULL) {
             printf("Value of %s: %d\n", $2, symbol->value);
         } else {
             printf("Undefined variable %s\n", $2);
         }
-         
-         $$ = createNode('W', NULL, NULL, strdup($2)); 
+        $$ = createNode('W', NULL, NULL, strdup($2)); 
     }
     ;
 
 exp:
-    rel_exp{$$ = $1;}
-;
+    rel_exp { $$ = $1; }
+    ;
 
 
 rel_exp:
@@ -126,10 +122,9 @@ factor:
         $$ = createNode('N', NULL, NULL, strdup(buffer)); 
     }
     | ID {
-    checkUndeclaredVariable($1);
-    $$ = createNode('I', NULL, NULL, strdup($1));
+        checkUndeclaredVariable($1);
+        $$ = createNode('I', NULL, NULL, strdup($1));
     }
-
     | '(' exp ')' { $$ = $2; }
     ;
 
@@ -192,9 +187,10 @@ void checkUndeclaredVariable(char *name) {
 
 void declareVariable(char *name) {
     if (findSymbol(name) == NULL) {
-        insertSymbol(name, 0);
+        insertSymbol(name, 0); // Προσθήκη της μεταβλητής με αρχική τιμή 0
     }
 }
+
 
 void printSymbolTable() {
     Symbol *current = symbolTable;
@@ -233,10 +229,64 @@ int evaluateExpression(AstNode *node) {
     }
 }
 
+void executeNode(AstNode *node) {
+    if (node == NULL) return;
+
+    switch (node->nodeType) {
+        case 'I': { // If statement
+            int cond = evaluateExpression(node->left); // Αξιολόγηση της συνθήκης
+            if (cond) {
+                executeNode(node->right); // Εκτέλεση του THEN μπλοκ
+            } else if (node->right && node->right->nodeType == 'E') {
+                executeNode(node->right->right); // Εκτέλεση του ELSE μπλοκ αν υπάρχει
+            }
+            break;
+        }
+        case '=': { // Assignment
+            Symbol *symbol = findSymbol(node->left->value);
+            if (symbol != NULL) {
+                symbol->value = evaluateExpression(node->right);
+                printf("Assigned %d to %s\n", symbol->value, node->left->value);
+            } else {
+                // Αν η μεταβλητή δεν βρεθεί, την εισάγουμε στον πίνακα συμβόλων
+                insertSymbol(node->left->value, evaluateExpression(node->right));
+                printf("Assigned %d to %s\n", evaluateExpression(node->right), node->left->value);
+            }
+            break;
+        }
+        case 'R': { // Read statement
+            // Δεδομένου ότι το διάβασμα είναι προσομοιωμένο, δεν εκτελούμε τίποτα εδώ
+            break;
+        }
+        case 'W': { // Write statement
+            Symbol *symbol = findSymbol(node->value);
+            if (symbol != NULL) {
+                printf("Value of %s: %d\n", node->value, symbol->value);
+            }
+            break;
+        }
+        case ';': { // Sequence of statements
+            executeNode(node->left);
+            executeNode(node->right);
+            break;
+        }
+        case '*':
+        case '/':
+        case '+':
+        case '-': {
+            // Εκτέλεση των μαθηματικών πράξεων αν χρειαστεί
+            break;
+        }
+        default:
+            printf("Unknown node type: %c\n", node->nodeType);
+            break;
+    }
+}
 
 
 int main() {
     yyparse();
+    executeNode(root); // Χρήση της παγκόσμιας μεταβλητής root
     printSymbolTable();
     return 0;
 }
