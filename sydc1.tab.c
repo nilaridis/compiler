@@ -1799,21 +1799,6 @@ void declareVariable(char *name) {
     }
 }
 
-void undeclareVariable(char *name) {
-    Symbol **current = &symbolTable;
-    while (*current != NULL) {
-        if (strcmp((*current)->name, name) == 0) {
-            Symbol *temp = *current;
-            *current = (*current)->next;
-            free(temp->name);
-            free(temp);
-            printf("Undeclared variable %s\n", name);
-            return;
-        }
-        current = &((*current)->next);
-    }
-}
-
 void printSymbolTable() {
     Symbol *current = symbolTable;
     printf("Symbol Table:\n");
