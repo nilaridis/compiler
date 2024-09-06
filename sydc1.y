@@ -4,6 +4,7 @@
     #include <string.h>
     #include "ast.h"  
     #include "symbol.h"
+    #include "mixal_generator.h" 
 
     Symbol *symbolTable = NULL;
     struct AstNode *root = NULL;
@@ -21,7 +22,7 @@
 
 %token <yint> DEC_CONST
 %token <ystr> ID
-%token IF THEN ELSE WRITE READ REPEAT UNTIL END
+%token IF THEN ELSE WRITE REPEAT UNTIL END READ
 %token EQ
 %token ASSIGN LT
 %token <ystr> '(' ')' ';'
@@ -32,11 +33,11 @@
 %%
 
 program:
-    stmt_seq { root = $1; }  // Αποθηκεύουμε τη ρίζα του δέντρου στην παγκόσμια μεταβλητή root
+    stmt_seq { root = $1; }
     ;
 
 stmt_seq:
-    stmt_seq ';' stmt { $$ = createNode(';', $1, $3, NULL); }
+    stmt_seq ';' stmt { $$ = createNode(NODE_SEQ, $1, $3, NULL); }
     | stmt { $$ = $1; }
     ;
 
@@ -50,32 +51,32 @@ stmt:
 
 assign_stmt:
     ID ASSIGN exp {
-        $$ = createNode('=', createNode('I', NULL, NULL, $1), $3, NULL); 
+        $$ = createNode(NODE_ASSIGN, createNode(NODE_ID, NULL, NULL, $1), $3, NULL); 
     }
     ;
 
 if_stmt:
     IF exp THEN stmt_seq END { 
-        $$ = createNode('I', $2, $4, NULL); // Δημιουργία κόμβου if
+        $$ = createNode(NODE_IF, $2, $4, NULL);
     }
     | IF exp THEN stmt_seq ELSE stmt_seq END { 
-        $$ = createNode('I', $2, createNode('E', $4, $6, NULL), NULL); // Δημιουργία κόμβου if-else
+        $$ = createNode(NODE_IF, $2, createNode(NODE_ELSE, $4, $6, NULL), NULL);
     }
     ;
 
 repeat_stmt:
-    REPEAT stmt_seq UNTIL exp { $$ = createNode('R', $2, $4, NULL); }
+    REPEAT stmt_seq UNTIL exp { $$ = createNode(NODE_REPEAT, $2, $4, NULL); }
     ;
 
 read_stmt:
     READ ID {
-        $$ = createNode('L', NULL, NULL, strdup($2)); // Δημιουργία κόμβου Load
+        $$ = createNode(NODE_READ, NULL, NULL, strdup($2));
     }
     ;
 
 write_stmt:
     WRITE ID {
-        $$ = createNode('W', NULL, NULL, strdup($2)); 
+        $$ = createNode(NODE_WRITE, NULL, NULL, strdup($2)); 
     }
     ;
 
@@ -83,184 +84,92 @@ exp:
     rel_exp { $$ = $1; }
     ;
 
-
 rel_exp:
     simple_exp
-    | simple_exp LT simple_exp { $$ = createNode('<', $1, $3, NULL); }
-    | simple_exp EQ simple_exp { $$ = createNode('=', $1, $3, NULL); }
+    | simple_exp LT simple_exp { $$ = createNode(NODE_LT, $1, $3, NULL); }
+    | simple_exp EQ simple_exp { $$ = createNode(NODE_EQ, $1, $3, NULL); }
     ;
 
 simple_exp:
     term
-    | simple_exp '+' term { $$ = createNode('+', $1, $3, NULL); }
-    | simple_exp '-' term { $$ = createNode('-', $1, $3, NULL); }
+    | simple_exp '+' term { $$ = createNode(NODE_PLUS, $1, $3, NULL); }
+    | simple_exp '-' term { $$ = createNode(NODE_MINUS, $1, $3, NULL); }
     ;
 
 term:
     factor
-    | term '*' factor { $$ = createNode('*', $1, $3, NULL); }
-    | term '/' factor { $$ = createNode('/', $1, $3, NULL); }
+    | term '*' factor { $$ = createNode(NODE_MUL, $1, $3, NULL); }
+    | term '/' factor { $$ = createNode(NODE_DIV, $1, $3, NULL); }
     ;
 
 factor:
     DEC_CONST { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", $1);
-        $$ = createNode('N', NULL, NULL, strdup(buffer)); 
+        $$ = createNode(NODE_NUMBER, NULL, NULL, strdup(buffer)); 
     }
     | ID {
-        $$ = createNode('I', NULL, NULL, strdup($1));
+        $$ = createNode(NODE_ID, NULL, NULL, strdup($1));
     }
     | '(' exp ')' { $$ = $2; }
     ;
 
 %%
 
-AstNode *createNode(int nodeType, AstNode *left, AstNode *right, char *value) {
-    AstNode *node = (AstNode *)malloc(sizeof(AstNode));
-    node->nodeType = nodeType;
-    node->left = left;
-    node->right = right;
-    node->value = value ? strdup(value) : NULL;
-    return node;
-}
-
-void printTree(AstNode *node, int level) {
-    if (node == NULL) return;
-    for (int i = 0; i < level; i++) printf("  ");
-    printf("%c", node->nodeType);
-    if (node->value) printf(" (%s)", node->value);
-    printf("\n");
-    printTree(node->left, level + 1);
-    printTree(node->right, level + 1);
-}
-
 void yyerror(const char *s) {
     fprintf(stderr, "Error: %s\n", s);
-}
-
-Symbol *createSymbol(char *name, int value) {
-    Symbol *symbol = (Symbol *)malloc(sizeof(Symbol));
-    symbol->name = strdup(name);
-    symbol->value = value;
-    symbol->next = NULL;
-    return symbol;
-}
-
-void insertSymbol(char *name, int value) {
-    Symbol *symbol = createSymbol(name, value);
-    symbol->next = symbolTable;
-    symbolTable = symbol;
-}
-
-Symbol *findSymbol(char *name) {
-    Symbol *current = symbolTable;
-    while (current != NULL) {
-        if (strcmp(current->name, name) == 0) {
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-void declareVariable(char *name) {
-    if (findSymbol(name) == NULL) {
-        insertSymbol(name, 0); // Προσθήκη της μεταβλητής με αρχική τιμή 0
-    }
-}
-
-void printSymbolTable() {
-    Symbol *current = symbolTable;
-    printf("Symbol Table:\n");
-    printf("Name\tValue\n");
-    printf("----\t-----\n");
-    while (current != NULL) {
-        printf("%s\t%d\n", current->name, current->value);
-        current = current->next;
-    }
-}
-
-int evaluateExpression(AstNode *node) {
-    if (node == NULL) return 0;
-    switch (node->nodeType) {
-        case 'N': // Number
-            return atoi(node->value);
-        case 'I': { // Identifier
-            Symbol *symbol = findSymbol(node->value);
-            return symbol ? symbol->value : 0;
-        }
-        case '+':
-            return evaluateExpression(node->left) + evaluateExpression(node->right);
-        case '-':
-            return evaluateExpression(node->left) - evaluateExpression(node->right);
-        case '*':
-            return evaluateExpression(node->left) * evaluateExpression(node->right);
-        case '/':
-            return evaluateExpression(node->left) / evaluateExpression(node->right);
-        case '<':
-            return evaluateExpression(node->left) < evaluateExpression(node->right);
-        case '=':
-            return evaluateExpression(node->left) == evaluateExpression(node->right);
-        default:
-            return 0;
-    }
 }
 
 void executeNode(AstNode *node) {
     if (node == NULL) return;
 
     switch (node->nodeType) {
-        case 'I': { // If statement
-            int cond = evaluateExpression(node->left); // Αξιολόγηση της συνθήκης
+        case NODE_IF: {
+            int cond = evaluateExpression(node->left, symbolTable);
             if (cond) {
-                executeNode(node->right); // Εκτέλεση του THEN μπλοκ
-            } else if (node->right && node->right->nodeType == 'E') {
-                executeNode(node->right->right); // Εκτέλεση του ELSE μπλοκ αν υπάρχει
+                executeNode(node->right);
+            } else if (node->right && node->right->nodeType == NODE_ELSE) {
+                executeNode(node->right->right);
             }
             break;
         }
-        case '=': { // Assignment
-            // Έλεγχος αν η μεταβλητή έχει δηλωθεί
-            if (findSymbol(node->left->value) == NULL) {
-                declareVariable(node->left->value); // Δήλωση της μεταβλητής αν δεν έχει δηλωθεί
+        case NODE_ASSIGN: {
+            if (findSymbol(node->left->value, symbolTable) == NULL) {
+                declareVariable(node->left->value, &symbolTable);
             }
-            Symbol *symbol = findSymbol(node->left->value);
+            Symbol *symbol = findSymbol(node->left->value, symbolTable);
             if (symbol != NULL) {
-                symbol->value = evaluateExpression(node->right);
+                symbol->value = evaluateExpression(node->right, symbolTable);
                 printf("Assigned %d to %s\n", symbol->value, node->left->value);
             }
             break;
         }
-        case 'R': { // Repeat statement
+        case NODE_REPEAT: {
             do {
-                executeNode(node->left); // Εκτέλεση του μπλοκ εντολών
-            } while (!evaluateExpression(node->right)); // Επανάληψη έως ότου η συνθήκη γίνει true
+                executeNode(node->left);
+            } while (!evaluateExpression(node->right, symbolTable));
             break;
         }
-        case 'L': { // Read statement (χρήση του 'L' για τη read)
-            // Δήλωση της μεταβλητής αν δεν υπάρχει
-            if (findSymbol(node->value) == NULL) {
-                declareVariable(node->value);
+        case NODE_READ: {
+            if (findSymbol(node->value, symbolTable) == NULL) {
+                declareVariable(node->value, &symbolTable);
             }
-            Symbol *symbol = findSymbol(node->value);
-            // Μπορείτε να προσθέσετε εδώ λογική για ανάγνωση τιμής από τον χρήστη αν χρειάζεται.
+            Symbol *symbol = findSymbol(node->value, symbolTable);
             printf("Reading value for %s\n", node->value);
             break;
         }
-        case 'W': { // Write statement
-            // Έλεγχος αν η μεταβλητή έχει δηλωθεί πριν την εκτύπωση
-            if (findSymbol(node->value) == NULL) {
+        case NODE_WRITE: {
+            if (findSymbol(node->value, symbolTable) == NULL) {
                 fprintf(stderr, "Semantic Error: Undeclared variable %s\n", node->value);
                 exit(1);
             }
-            Symbol *symbol = findSymbol(node->value);
+            Symbol *symbol = findSymbol(node->value, symbolTable);
             if (symbol != NULL) {
                 printf("Value of %s: %d\n", node->value, symbol->value);
             }
             break;
         }
-        case ';': { // Sequence of statements
+        case NODE_SEQ: {
             executeNode(node->left);
             executeNode(node->right);
             break;
@@ -271,13 +180,13 @@ void executeNode(AstNode *node) {
     }
 }
 
-
 int main() {
-    yyparse();  // Παρσάρισμα του εισερχόμενου κώδικα για να δημιουργηθεί το AST
+    yyparse();
     printf("Syntax Tree:\n");
-    printTree(root, 0);  // Εκτύπωση του συντακτικού δέντρου ξεκινώντας από τη ρίζα
+    printTree(root, 0);
     printf("\nExecuting program:\n");
-    executeNode(root);  // Εκτέλεση του AST χρησιμοποιώντας τη ρίζα
-    printSymbolTable();  // Εκτύπωση του πίνακα συμβόλων μετά την εκτέλεση
+    executeNode(root);
+    printSymbolTable(symbolTable);
+    generateMixalCode(root, symbolTable, 1000); 
     return 0;
 }
