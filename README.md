@@ -31,9 +31,17 @@ brew install flex bison make
 
 Once you have all the dependencies installed, you can build the project by running the following command:
 ```
-make
+make test
 ```
+This will build the compiler and generate the MIXAL output file.
 
+Clean Up
+
+To remove all files generated from the build process, use the following command:
+```
+make clean
+
+```
 ## License
 
 Under MIT License
