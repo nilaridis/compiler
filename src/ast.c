@@ -20,6 +20,7 @@ const char* nodeTypeToString(NodeType nodeType) {
         case NODE_LT: return "LT";
         case NODE_EQ: return "EQ";
         case NODE_SEQ: return "SEQ";
+        case NODE_PROGRAM: return "PROGRAM";
         default: return "UNKNOWN";
     }
 }

@@ -9,6 +9,9 @@
     Symbol *symbolTable = NULL;
     struct AstNode *root = NULL;
 
+    FILE *fout;  // Ορισμός της μεταβλητής fout
+
+
     void yyerror(const char *s);
     int yylex(void);
     void executeNode(struct AstNode *node);
@@ -33,7 +36,10 @@
 %%
 
 program:
-    stmt_seq { root = $1; }
+    stmt_seq { 
+        $$ = createNode(NODE_PROGRAM, $1, NULL, NULL); 
+        root = $$;
+    }
     ;
 
 stmt_seq:
@@ -124,6 +130,10 @@ void executeNode(AstNode *node) {
     if (node == NULL) return;
 
     switch (node->nodeType) {
+        case NODE_PROGRAM: {
+            executeNode(node->left);  // Typically, the left child will hold the statements for a program
+            break;
+        }
         case NODE_IF: {
             int cond = evaluateExpression(node->left, symbolTable);
             if (cond) {
@@ -197,7 +207,7 @@ int main() {
 
     // Generate MIXAL code and write it to the file
     printf("\nGenerating MIXAL code:\n");
-    printMixal(root);  // Call to the new `printMixal` function to generate MIXAL code
+    generateMixalCode(root);
 
     // Close the output file
     fclose(fout);

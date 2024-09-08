@@ -19,7 +19,8 @@ typedef enum {
     NODE_DIV,
     NODE_LT,
     NODE_EQ,
-    NODE_SEQ
+    NODE_SEQ,
+    NODE_PROGRAM
 } NodeType;
 
 typedef struct AstNode {

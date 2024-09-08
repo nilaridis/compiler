@@ -40,7 +40,6 @@ Clean Up
 To remove all files generated from the build process, use the following command:
 ```
 make clean
-
 ```
 ## License
 

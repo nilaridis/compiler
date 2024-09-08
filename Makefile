@@ -20,7 +20,7 @@ compiler:
 .phony: test
 test: compiler
 	./compiler < samples/inputfile2.txt 1.mixal -asm -overflow
-
+	mixasm asm.mixal
 .phony: clean
 clean:
 	rm -f compiler
@@ -28,5 +28,6 @@ clean:
 	rm -f source/sydc1.tab.h
 	rm -f source/ysydc1tab.c
 	rm -f source/lex.yy.c
+	rm -f *.mix
 
 

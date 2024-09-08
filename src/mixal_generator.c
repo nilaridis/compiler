@@ -1,302 +1,362 @@
-#include "mixal_generator.h"
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+#include "ast.h"
+#include "symbol.h"
+#include "mixal_generator.h"
 
-FILE *fout; // Output file stream
 
-int next_index = 1;
-int next_location = 2000;
-int next_label = 1;
-int next_buf = 0;
+int variable_count = 0; 
 
-void printGlobalVariables() {
-    // Print the initial global variables and constants
-    printLaOpNu("BUF1", "CON", 0);
-    printLaOpNu("BUF2", "CON", 0);
-    printLaOpNu("BUF3", "CON", 0);
-    printLaOpNu("TMP", "EQU", 3000);
-    printLaOpNu("BUF", "EQU", 3001);
+void generateProgramCode(AstNode* node) {
+    fprintf(fout, " ORIG 2000\n");  // Ορισμός αρχικής διεύθυνσης του MIXAL προγράμματος
+    generateMixalCode(node->left);  // Εκτέλεση του υπόλοιπου προγράμματος
+    fprintf(fout, " END 2000\n");  // Τέλος προγράμματος
 }
 
-void declareMixalVariable(const char* name, int location) {
-    fprintf(fout, "%s\tEQU\t%d\n", name, location);
-}
+// Παράδειγμα συνάρτησης για παραγωγή MIXAL για κόμβο ανάθεσης
+extern Symbol *symbolTable;  // Δήλωση του πίνακα συμβόλων
 
-void printStart() {
-    // Print the start of the program
-    printCo("start");
-    printLaOpNu("", "ORIG", 100);
-    printLaOpOp("START", "NOP", "");
-}
-
-void printEnd() {
-    // Print the end of the program
-    printCo("end");
-    printLaOpNu("", "ENTA", 0);  // rA = 0
-    printLaOpOp("", "HLT", "");  // Halt
-    printLaOpNu("ERR", "ENTA", 1);  // Error: rA = 1
-    printLaOpOp("", "HLT", "");  // Halt
-    printLaOpOp("", "END", "START");  // End of program
-}
-
-
-// Function to start generating MIXAL code
-void printMixal(AstNode *root) {
-    next_index = 1;
-    next_location = 2000;
-    next_label = 1;
-    next_buf = 0;
-
-    printGlobalVariables();
-    printCo("global variables");
-
-    // Declare initial variables
-    declareMixalVariable("V1", 2000);  // V1
-    declareMixalVariable("V2", 2001);  // V2
-
-    // Generate code for all the nodes in the syntax tree
-    gen(root);
-
-    // Define labels used for jumps (e.g., L1)
-    fprintf(fout, "L1\tNOP\t\n");
-
-    // Add start, print statements, and end of program
-    printStart();
-    printCo("statements");
-    gen(root);  // Generate statements
-    printEnd();
-}
-
-// Print comment
-void printCo(const char* text) {
-    fprintf(fout, "*\t\t\t\t\t%s\n", text);
-}
-
-// Print label
-void printLa(int label) {
-    fprintf(fout, "L%d\tNOP\t\n", label);
-}
-
-// Print label, operation, and number
-void printLaOpNu(const char* label, const char* operation, int num) {
-    fprintf(fout, "%s\t%s\t%d\n", label, operation, num);
-}
-
-// Print label, operation, and operand
-void printLaOpOp(const char* label, const char* operation, const char* operand) {
-    fprintf(fout, "%s\t%s\t%s\n", label, operation, operand);
-}
-
-// Print variable, operation, and number
-void printVaOpNu(int index, const char* operation, int num) {
-    fprintf(fout, "V%d\t%s\t%d\n", index, operation, num);
-}
-
-// Print operation and operand
-void printOpOp(const char* operation, const char* operand) {
-    fprintf(fout, "\t%s\t%s\n", operation, operand);
-}
-
-// Print operation and number
-void printOpNu(const char* operation, int num) {
-    fprintf(fout, "\t%s\t%d\n", operation, num);
-}
-
-// Print operation, operand, and number
-void printOpOpNu(const char* operation, const char* operand, int num) {
-    fprintf(fout, "\t%s\t%s%d\n", operation, operand, num);
-}
-
-// Print operation and variable
-void printOpVa(const char* operation, int index) {
-    fprintf(fout, "\t%s\tV%d\n", operation, index);
-}
-
-// Print operation and array
-void printOpAr(const char* operation, int index) {
-    fprintf(fout, "\t%s\tV%d,1\n", operation, index);
-}
-
-// Print operation and label
-void printOpLa(const char* operation, int index) {
-    fprintf(fout, "\t%s\tL%d\n", operation, index);
-}
-
-// Print operation and literal value
-void printOpLi(const char* operation, int value) {
-    fprintf(fout, "\t%s\t=%d=\n", operation, value);
-}
-
-// Main generation function, processes nodes recursively
-int gen(AstNode *n) {
-    if (!n) return 0;
-
-    switch(n->nodeType) {
-        case NODE_SEQ:
-            // Process left and right nodes in sequence
-            gen(n->left);
-            gen(n->right);
-            break;
-
-        case NODE_ASSIGN:
-            // Handle assignment node
-            gen(n->right);  // Evaluate right-hand side expression
-            printOpVa("STA", next_index++);  // Store result in the variable
-            next_location++;  // Increment memory location
-            break;
-
-        case NODE_IF:
-            // Handle if statement
-            gen(n->left);  // Evaluate condition (should be comparison)
-            printOpVa("CMPA", next_index - 1);  // Compare with variable
-            printOpLa("JAZ", next_label);  // Jump if zero
-            next_label++;  // Increment label counter
-            break;
-
-        case NODE_WRITE:
-            // Handle write statement
-            gen(n->left);  // Evaluate expression to print
-            printCo("print start");
-            printOpOp("ENTX", "44");
-            printOpOp("JANN", "*+2");
-            printOpOp("ENTX", "45");
-            printOpOp("JBUS", "*(18)");
-            printOpOp("STX", "BUF1");
-            printOpOp("CHAR", "");
-            printOpOp("STA", "BUF2");
-            printOpOp("STX", "BUF3");
-            printOpOp("OUT", "BUF1(18)");
-            printCo("print end");
-            break;
-
-        case NODE_NUMBER:
-            // Handle number node
-            printOpNu("ENTA", atoi(n->value));  // Load number into register rA
-            break;
-
-        case NODE_ID:
-            // Handle identifier node (variable)
-            printOpVa("LDA", next_index++);  // Load variable into register rA
-            break;
-
-        case NODE_LT:  // Handle less than (<) comparison
-            gen(n->left);  // Evaluate left-hand side
-            gen(n->right);  // Evaluate right-hand side
-            printOpOp("CMPA", n->right->value);  // Compare the two values
-            printOpOp("JL", "*+2");  // If less, jump
-            break;
-
-        case NODE_EQ:  // Handle equality (==) comparison
-            gen(n->left);  // Evaluate left-hand side
-            gen(n->right);  // Evaluate right-hand side
-            printOpOp("CMPA", n->right->value);  // Compare the two values
-            printOpOp("JE", "*+2");  // If equal, jump
-            break;
-
-        // Add cases for arithmetic and logical operations (PLUS, MINUS, etc.)
-        case NODE_PLUS:
-            gen(n->left);
-            gen(n->right);
-            printOpOp("ADD", "");  // Add two operands
-            break;
-
-        case NODE_MINUS:
-            gen(n->left);
-            gen(n->right);
-            printOpOp("SUB", "");  // Subtract two operands
-            break;
-
-        // Add other cases here...
-
-        default:
-            fprintf(fout, "*UNKNOWN NODE TYPE\n");
-            break;
+void generateAssignmentCode(AstNode* node) {
+    // Δηλώνουμε τη μεταβλητή αν δεν υπάρχει ήδη
+    Symbol *symbol = findSymbol(node->left->value, symbolTable);
+    
+    if (symbol == NULL) {
+        // Αν η μεταβλητή δεν υπάρχει, τη δηλώνουμε και κάνουμε μηδενισμό της τιμής
+        declareVariable(node->left->value, &symbolTable);
+        symbol = findSymbol(node->left->value, symbolTable);
+        fprintf(fout, " STZ %d(0:5)\n", symbol->memoryLocation);  // Μηδενισμός μόνο την πρώτη φορά
     }
 
-    return 0;
+    // Τώρα εκχωρούμε τη νέα τιμή
+    generateMixalCode(node->right);  // Υπολογισμός του δεξιού μέρους της ανάθεσης
+    fprintf(fout, " STA %d(0:5)\n", symbol->memoryLocation);  // Αποθήκευση της τιμής στη μεταβλητή
 }
 
-// Helper Functions
 
-// Symbol in rA.
-// Moves a given symbol to rA.
-void gen_toA(AstNode *node) {
-    if (node->nodeType == NODE_NUMBER) {
-        printOpNu("LDA", atoi(node->value));
-    } else if (node->nodeType == NODE_ID) {
-        printOpVa("LDA", next_index++);
-    }
+
+
+
+void generateNumber(AstNode* node) {
+    fprintf(fout, " ENTA %s\n", node->value);  // Φορτώνει τον αριθμό στην A
 }
 
-// Symbol not in rA.
-// Moves elsewhere content related to a given symbol from rA so it can be written over.
-void gen_notA(AstNode *node) {
-    if (next_buf) {
-        printOpOpNu("STA", "BUF+", next_buf);
+void generateID(AstNode* node) {
+    Symbol *symbol = findSymbol(node->value, symbolTable);
+    if (symbol != NULL) {
+        fprintf(fout, " LDA %d(0:5)\n", symbol->memoryLocation);  // Χρήση της σωστής διεύθυνσης μνήμης
     } else {
-        printOpOp("STA", "BUF");
-    }
-    next_buf++;
-
-    if (next_buf > 999) {
-        fprintf(stderr, "Memory overflow\n");
-        exit(1);
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->value);
     }
 }
 
-// Moves a given symbol to rA and restores the changes from notA().
-void gen_toA_bynotA(AstNode *node) {
-    gen_toA(node);  // Just move the node to rA (restore from BUF)
-    next_buf--;
-    if (next_buf) {
-        printOpOpNu("LDA", "BUF+", next_buf);
-    } else {
-        printOpOp("LDA", "BUF");
+// Παράδειγμα συνάρτησης για παραγωγή MIXAL για κόμβο IF
+void generateIfCode(AstNode* node) {
+    if (node->nodeType == NODE_IF) {
+        generateMixalCode(node->left);  // Συνθήκη (π.χ., 30 < x)
+        fprintf(fout, " CMPA %d(0:5)\n", findSymbol(node->left->right->value, symbolTable)->memoryLocation);  // Σύγκριση με το x
+        fprintf(fout, " JL THEN\n");  // Άλμα στο 'then' block αν η συνθήκη είναι αληθής
+        fprintf(fout, " JMP ELSE\n");  // Άλμα στο 'else' block αν η συνθήκη είναι ψευδής
+
+        // THEN block
+        fprintf(fout, "THEN NOP\n");
+        generateMixalCode(node->right->left);  // Εντολές μέσα στο THEN block (π.χ., fact := 6)
+
+        // Άλμα έξω από το 'else' block για να παρακαμφθεί
+        fprintf(fout, " JMP ENDIF\n");
+
+        // ELSE block
+        fprintf(fout, "ELSE NOP\n");
+        generateMixalCode(node->right->right);  // Εντολές μέσα στο ELSE block (π.χ., fact := 10, x := x - 1)
+
+        // Τέλος IF-ELSE block
+        fprintf(fout, "ENDIF NOP\n");
     }
 }
 
-// Moves a given symbol to r1 and restores the changes from notA().
-void gen_to1_bynotA(AstNode *node) {
-    if (node->nodeType == NODE_NUMBER) {
-        printOpNu("ENT1", atoi(node->value));
-    } else {
-        gen_notA(node);  // Move content elsewhere first
-        next_buf--;
-        if (next_buf) {
-            printOpOpNu("LD1", "BUF+", next_buf);
-        } else {
-            printOpOp("LD1", "BUF");
+
+void generatePlus(AstNode* node) {
+    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
+    if (leftSymbol != NULL) {
+        // Φόρτωση της τιμής του αριστερού ορίσματος (fact) στον A
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+
+        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
+        if (node->right->nodeType == NODE_NUMBER) {
+            // Αποθήκευση του αριθμού στο X
+            fprintf(fout, " ENTX %s\n", node->right->value);
+        } else if (node->right->nodeType == NODE_ID) {
+            // Φόρτωση της τιμής της μεταβλητής στο X
+            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
+            if (rightSymbol != NULL) {
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
+            }
         }
-    }
-}
 
-// Symbol in r1.
-// Moves a given symbol to r1.
-void gen_to1(AstNode *node) {
-    if (node->nodeType == NODE_NUMBER) {
-        printOpNu("ENT1", atoi(node->value));
-    } else if (node->nodeType == NODE_ID) {
-        printOpVa("LD1", next_index++);
-    }
-}
+        // Αποθήκευση της τιμής του X προσωρινά και πρόσθεση
+        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X στη θέση 0
+        fprintf(fout, " ADD 0(0:5)\n");  // Πρόσθεση της τιμής του X με την τιμή του A
 
-// Checks a given symbol used as an index if it's negative. If so, terminate execution.
-void gen_checkindex(AstNode *node) {
-    if (node->nodeType == NODE_NUMBER) {
-        if (atoi(node->value) < 0) printOpOp("JMP", "ERR");
+        // Αποθήκευση του νέου αποτελέσματος ξανά στη μεταβλητή fact
+        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
     } else {
-        printOpOp("J1N", "ERR");
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
     }
 }
 
-// Checks if overflow occurred. If so, terminate execution.
-void gen_checkoverflow(int where) {
-    switch (where) {
-        case 0:
-            printOpOp("JOV", "ERR");
+
+
+void generateMinus(AstNode* node) {
+    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
+    if (leftSymbol != NULL) {
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);  // Φόρτωση της τιμής του fact στον accumulator
+
+        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
+        if (node->right->nodeType == NODE_NUMBER) {
+            fprintf(fout, " ENTX %s\n", node->right->value);   // Φόρτωση αριθμού στο X
+        } else if (node->right->nodeType == NODE_ID) {
+            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
+            if (rightSymbol != NULL) {
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);  // Φόρτωση της τιμής της μεταβλητής στο X
+            }
+        }
+
+        // Αποθήκευση του X προσωρινά και αφαίρεση
+        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X προσωρινά
+        fprintf(fout, " SUB 0(0:5)\n");  // Αφαίρεση της τιμής του X από τον A
+
+        // Αποθήκευση του νέου αποτελέσματος στη μεταβλητή fact
+        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
+    }
+}
+
+
+void generateMul(AstNode* node) {
+    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
+    if (leftSymbol != NULL) {
+        // Φόρτωση της τιμής του αριστερού ορίσματος (fact) στον A
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+
+        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
+        if (node->right->nodeType == NODE_NUMBER) {
+            // Αποθήκευση του αριθμού στο X
+            fprintf(fout, " ENTX %s\n", node->right->value);
+        } else if (node->right->nodeType == NODE_ID) {
+            // Φόρτωση της τιμής της μεταβλητής στο X
+            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
+            if (rightSymbol != NULL) {
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
+            }
+        }
+
+        // Αποθήκευση της τιμής του X προσωρινά και πολλαπλασιασμός
+        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X στη θέση 0
+        fprintf(fout, " MUL 0(0:5)\n");  // Πολλαπλασιασμός της τιμής του X με την τιμή του A
+
+        // Αποθήκευση των αποτελεσμάτων του A και X
+        fprintf(fout, " STA 0(0:0)\n");  // Αποθήκευση του A
+        fprintf(fout, " STX 0(1:5)\n");  // Αποθήκευση του X
+
+        // Αποθήκευση του νέου αποτελέσματος στη μεταβλητή fact
+        fprintf(fout, " LDA 0(0:5)\n");  // Φόρτωση του αποτελέσματος
+        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
+    }
+}
+
+
+
+void generateDiv(AstNode* node) {
+    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
+    if (leftSymbol != NULL) {
+        // Φόρτωση της τιμής του αριστερού ορίσματος στον A
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+
+        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή
+        if (node->right->nodeType == NODE_NUMBER) {
+            if (strcmp(node->right->value, "0") == 0) {
+                fprintf(fout, " JMP DIVZERO\n");  // Άλμα αν το δεξί όρισμα είναι 0
+                return;
+            }
+            // Αποθήκευση του αριθμού στο X
+            fprintf(fout, " ENTX %s\n", node->right->value);
+        } else if (node->right->nodeType == NODE_ID) {
+            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
+            if (rightSymbol != NULL) {
+                // Φόρτωση του δεξιού ορίσματος στο X
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
+
+                // Έλεγχος διαίρεσης με το 0 μέσω του καταχωρητή 1
+                fprintf(fout, " ENT1 0\n");
+                fprintf(fout, " CMP1 0(0:5)\n");  // Σύγκριση με τη θέση 0
+                fprintf(fout, " JE DIVZERO\n");  // Άλμα αν ο διαιρέτης είναι 0
+            }
+        }
+
+        // Προετοιμασία της διαίρεσης
+        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση του X στη θέση 0
+
+        // Εκτέλεση της διαίρεσης
+        fprintf(fout, " DIV 0(0:5)\n");
+
+        // Αποθήκευση του αποτελέσματος
+        fprintf(fout, " STA 2(0:5)\n");  // Αποθήκευση του A στη μεταβλητή
+
+        // Τέλος διαίρεσης
+        fprintf(fout, " JMP ENDDIV\n");
+
+        // Ετικέτα για διαίρεση με το 0
+        fprintf(fout, "DIVZERO NOP\n");
+
+        // Ετικέτα τέλους διαίρεσης
+        fprintf(fout, "ENDDIV NOP\n");
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
+    }
+}
+
+
+
+void generateLT(AstNode* node) {
+    // Αριστερή τιμή (30)
+    generateMixalCode(node->left);
+
+    // Δεξιά τιμή (x, το οποίο είναι σε μια διεύθυνση μνήμης)
+    Symbol *symbol = findSymbol(node->right->value, symbolTable);
+    if (symbol != NULL) {
+        fprintf(fout, " CMPA %d(0:5)\n", symbol->memoryLocation);  // Σύγκριση με τη διεύθυνση του x
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->right->value);
+    }
+}
+
+
+void generateEQ(AstNode* node) {
+    // Επεξεργασία του αριστερού μέρους της σύγκρισης
+    generateMixalCode(node->left);
+
+    // Βρίσκουμε τη διεύθυνση της μεταβλητής για σύγκριση
+    Symbol *symbol = findSymbol(node->right->value, symbolTable);
+    if (symbol != NULL) {
+        fprintf(fout, " CMPA %d(0:5)\n", symbol->memoryLocation);  // Σύγκριση με το x
+    }
+
+    // Άλμα αν το A είναι ίσο
+    fprintf(fout, " JE EQUALLABEL\n");
+    fprintf(fout, "EQUALLABEL NOP\n");
+}
+
+void generateReadCode(AstNode* node) {
+    fprintf(fout, " IN 1986(0:5)\n");  // Είσοδος τιμής
+    fprintf(fout, " STA %s(0:5)\n", node->value);  // Αποθήκευση τιμής
+}
+
+void generateRepeatCode(AstNode* node) {
+    fprintf(fout, "REPEATLABEL NOP\n");
+    generateMixalCode(node->left);  // Εντολές επανάληψης
+    generateMixalCode(node->right);  // Συνθήκη επανάληψης
+    fprintf(fout, " JMP REPEATLABEL\n");
+}
+
+int write_counter = 0;  // Μετρητής για μοναδικές ετικέτες
+
+void generateWriteCode(AstNode* node) {
+    Symbol *symbol = findSymbol(node->value, symbolTable);
+    if (symbol != NULL) {
+        int current_write = write_counter++;  // Χρησιμοποιούμε διαφορετικό αριθμό για κάθε ετικέτα
+
+        // Φόρτωση της τιμής της μεταβλητής στον καταχωρητή A
+        fprintf(fout, " LDA %d(0:5)\n", symbol->memoryLocation);
+
+        // Μετατροπή της τιμής σε χαρακτήρα
+        fprintf(fout, " CHAR\n");
+
+        // Αποθήκευση της τιμής στη μνήμη (1987)
+        fprintf(fout, " STA 1987(0:5)\n");
+
+        // Αποθήκευση του καταχωρητή X στη μνήμη (1988)
+        fprintf(fout, " STX 1988(0:5)\n");
+
+        // Εντολές για μορφοποίηση της εκτύπωσης
+        fprintf(fout, " ENTX 45\n");
+        fprintf(fout, " JAN KPO%d\n", current_write);  // Μοναδική ετικέτα για κάθε `write`
+        fprintf(fout, " ENTX 44\n");
+        fprintf(fout, "KPO%d NOP\n", current_write);  // Μοναδική ετικέτα για το σημείο άλματος
+
+        // Αποθήκευση του καταχωρητή X στη διεύθυνση 1986
+        fprintf(fout, " STX 1986(0:5)\n");
+
+        // Εκτύπωση της τιμής από τη μνήμη
+        fprintf(fout, " OUT 1986(2:3)\n");
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->value);
+    }
+}
+
+
+
+
+
+
+void generateSeqCode(AstNode* node) {
+    if (node->nodeType == NODE_SEQ) {
+        generateMixalCode(node->left);
+        generateMixalCode(node->right);
+    }
+}
+
+
+// Κεντρική συνάρτηση που καλεί τη σωστή συνάρτηση για κάθε τύπο κόμβου
+void generateMixalCode(AstNode* node) {
+    if (node == NULL) return;
+
+    switch (node->nodeType) {
+        case NODE_PROGRAM:
+            generateProgramCode(node);
             break;
-        case 1:
-            printOpOp("JANZ", "ERR");
+        case NODE_ASSIGN:
+            generateAssignmentCode(node);
             break;
+        case NODE_IF:
+            generateIfCode(node);
+            break;
+        case NODE_WRITE:
+            generateWriteCode(node);
+            break;
+        case NODE_READ:
+            generateReadCode(node);
+            break;
+        case NODE_SEQ:
+            generateSeqCode(node);
+            break;
+        case NODE_NUMBER:
+            generateNumber(node);
+            break;
+        case NODE_ID:
+            generateID(node);
+            break;
+        case NODE_PLUS:
+            generatePlus(node);
+            break;
+        case NODE_MINUS:
+            generateMinus(node);
+            break;
+        case NODE_MUL:
+            generateMul(node);
+            break;
+        case NODE_DIV:
+            generateDiv(node);
+            break;
+        case NODE_LT:
+            generateLT(node);
+            break;
+        case NODE_EQ:
+            generateEQ(node);
+            break;
+        case NODE_REPEAT:
+            generateRepeatCode(node);
+            break;
+        default:
+            fprintf(fout, "NOP\n");  // Προεπιλογή για άγνωστους κόμβους
     }
 }
