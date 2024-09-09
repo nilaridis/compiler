@@ -165,55 +165,56 @@ void generateMul(AstNode* node) {
 }
 
 
-
 void generateDiv(AstNode* node) {
+    // Φόρτωση του αριστερού ορίσματος (fact) στον accumulator (A)
     Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
     if (leftSymbol != NULL) {
-        // Φόρτωση της τιμής του αριστερού ορίσματος στον A
-        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);  // Φόρτωση του αριστερού ορίσματος (fact)
 
-        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή
+        // Έλεγχος για το δεξί όρισμα (αριθμός ή ID)
         if (node->right->nodeType == NODE_NUMBER) {
+            // Έλεγχος για διαίρεση με το μηδέν
             if (strcmp(node->right->value, "0") == 0) {
-                fprintf(fout, " JMP DIVZERO\n");  // Άλμα αν το δεξί όρισμα είναι 0
+                fprintf(fout, " JMP DIVZERO\n");  // Άλμα σε ετικέτα DIVZERO αν το δεξί μέρος είναι 0
                 return;
             }
-            // Αποθήκευση του αριθμού στο X
-            fprintf(fout, " ENTX %s\n", node->right->value);
+            fprintf(fout, " ENTX %s\n", node->right->value);  // Φόρτωση του αριθμού στο X
         } else if (node->right->nodeType == NODE_ID) {
             Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
             if (rightSymbol != NULL) {
-                // Φόρτωση του δεξιού ορίσματος στο X
-                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);  // Φόρτωση του δεξιού ορίσματος στο X
 
-                // Έλεγχος διαίρεσης με το 0 μέσω του καταχωρητή 1
+                // Έλεγχος αν η τιμή είναι μηδέν
                 fprintf(fout, " ENT1 0\n");
-                fprintf(fout, " CMP1 0(0:5)\n");  // Σύγκριση με τη θέση 0
-                fprintf(fout, " JE DIVZERO\n");  // Άλμα αν ο διαιρέτης είναι 0
+                fprintf(fout, " CMP1 %d(0:5)\n", rightSymbol->memoryLocation);  // Σύγκριση με το 0
+                fprintf(fout, " JE DIVZERO\n");  // Αν είναι μηδέν, πήγαινε σε DIVZERO
             }
         }
 
-        // Προετοιμασία της διαίρεσης
-        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση του X στη θέση 0
+        // Μηδενισμός του καταχωρητή X πριν τη διαίρεση
+        fprintf(fout, " STX 0(0:5)\n");
+        fprintf(fout, " ENTX 0\n");
 
         // Εκτέλεση της διαίρεσης
         fprintf(fout, " DIV 0(0:5)\n");
 
-        // Αποθήκευση του αποτελέσματος
-        fprintf(fout, " STA 2(0:5)\n");  // Αποθήκευση του A στη μεταβλητή
+        // Αποθήκευση του αποτελέσματος της διαίρεσης στον accumulator (A)
+        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
 
-        // Τέλος διαίρεσης
+        // Ολοκλήρωση
         fprintf(fout, " JMP ENDDIV\n");
-
-        // Ετικέτα για διαίρεση με το 0
         fprintf(fout, "DIVZERO NOP\n");
-
-        // Ετικέτα τέλους διαίρεσης
+        fprintf(fout, " HLT\n");
         fprintf(fout, "ENDDIV NOP\n");
     } else {
         fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
     }
 }
+
+
+
+
+
 
 
 
@@ -232,19 +233,38 @@ void generateLT(AstNode* node) {
 
 
 void generateEQ(AstNode* node) {
-    // Επεξεργασία του αριστερού μέρους της σύγκρισης
-    generateMixalCode(node->left);
+    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
+    if (leftSymbol != NULL) {
+        // Φόρτωση της αριστερής τιμής (π.χ., x) στον καταχωρητή A
+        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
 
-    // Βρίσκουμε τη διεύθυνση της μεταβλητής για σύγκριση
-    Symbol *symbol = findSymbol(node->right->value, symbolTable);
-    if (symbol != NULL) {
-        fprintf(fout, " CMPA %d(0:5)\n", symbol->memoryLocation);  // Σύγκριση με το x
+        // Έλεγχος αν η δεξιά τιμή είναι αριθμός ή μεταβλητή
+        if (node->right->nodeType == NODE_NUMBER) {
+            // Αν είναι αριθμός, συγκρίνουμε με αυτόν τον αριθμό
+            fprintf(fout, " ENTA %s\n", node->right->value);  // Φόρτωση του αριθμού στον A
+        } else if (node->right->nodeType == NODE_ID) {
+            // Αν είναι μεταβλητή, συγκρίνουμε με τη διεύθυνση της μεταβλητής στη μνήμη
+            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
+            if (rightSymbol != NULL) {
+                // Φόρτωση της δεξιάς τιμής στον X
+                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
+            } else {
+                fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->right->value);
+                return;
+            }
+        }
+
+        // Τώρα κάνουμε σύγκριση της τιμής στον A με τη διεύθυνση της δεξιάς τιμής
+        fprintf(fout, " CMPA %d(0:5)\n", leftSymbol->memoryLocation);
+
+        // Αν είναι ίσες, κάνουμε άλμα σε συγκεκριμένη ετικέτα
+        fprintf(fout, " JE EQUAL\n");
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
     }
-
-    // Άλμα αν το A είναι ίσο
-    fprintf(fout, " JE EQUALLABEL\n");
-    fprintf(fout, "EQUALLABEL NOP\n");
 }
+
+
 
 void generateReadCode(AstNode* node) {
     fprintf(fout, " IN 1986(0:5)\n");  // Είσοδος τιμής
@@ -252,11 +272,39 @@ void generateReadCode(AstNode* node) {
 }
 
 void generateRepeatCode(AstNode* node) {
-    fprintf(fout, "REPEATLABEL NOP\n");
-    generateMixalCode(node->left);  // Εντολές επανάληψης
-    generateMixalCode(node->right);  // Συνθήκη επανάληψης
-    fprintf(fout, " JMP REPEATLABEL\n");
+    static int repeatLabelCounter = 0;
+    int currentLabel = repeatLabelCounter++;
+
+    // Αρχή του repeat
+    fprintf(fout, "REPEAT%d NOP\n", currentLabel);
+
+    // Γεννάμε τον κώδικα για το σώμα της επανάληψης (π.χ., x := x - 1)
+    generateMixalCode(node->left);
+
+    // Φορτώνουμε την τιμή της μεταβλητής x για σύγκριση
+    Symbol *rightSymbol = findSymbol(node->right->left->value, symbolTable);  // Αν το x είναι το αριστερό παιδί
+    if (rightSymbol != NULL) {
+        fprintf(fout, " LDA %d(0:5)\n", rightSymbol->memoryLocation);  // Φορτώνουμε το x
+
+        // Γεννάμε τον κώδικα για την τιμή σύγκρισης (π.χ., until x = 2)
+        if (node->right->right->nodeType == NODE_NUMBER) {
+            fprintf(fout, " ENTA %s\n", node->right->right->value);  // Φορτώνουμε το 2 για σύγκριση
+        }
+
+        // Σύγκριση με 2 και έξοδος από τη βρόχο αν η συνθήκη ικανοποιείται
+        fprintf(fout, " CMPA 1(0:5)\n");  // Σύγκριση του A με 0 (το οποίο θα έχει φορτωθεί με το 2)
+        fprintf(fout, " JE ENDREPEAT%d\n", currentLabel);  // Έξοδος από τον βρόχο αν x = 2
+    }
+
+    // Αν η συνθήκη δεν ικανοποιείται, επιστροφή στην αρχή της βρόχου
+    fprintf(fout, " JMP REPEAT%d\n", currentLabel);
+
+    // Τέλος της βρόχου
+    fprintf(fout, "ENDREPEAT%d NOP\n", currentLabel);
 }
+
+
+
 
 int write_counter = 0;  // Μετρητής για μοναδικές ετικέτες
 
@@ -292,6 +340,9 @@ void generateWriteCode(AstNode* node) {
         fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->value);
     }
 }
+
+
+
 
 
 
