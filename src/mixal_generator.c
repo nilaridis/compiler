@@ -4,8 +4,8 @@
 #include "symbol.h"
 #include "mixal_generator.h"
 
-
 int variable_count = 0; 
+static int temp_count = 1;
 
 void generateProgramCode(AstNode* node) {
     fprintf(fout, " ORIG 2000\n");  // Ορισμός αρχικής διεύθυνσης του MIXAL προγράμματος
@@ -73,148 +73,103 @@ void generateIfCode(AstNode* node) {
     }
 }
 
-
 void generatePlus(AstNode* node) {
-    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
-    if (leftSymbol != NULL) {
-        // Φόρτωση της τιμής του αριστερού ορίσματος (fact) στον A
-        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+    int addTemp = temp_count++;
+    fprintf(fout, "TEMP%d EQU 0\n", addTemp);
 
-        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
-        if (node->right->nodeType == NODE_NUMBER) {
-            // Αποθήκευση του αριθμού στο X
-            fprintf(fout, " ENTX %s\n", node->right->value);
-        } else if (node->right->nodeType == NODE_ID) {
-            // Φόρτωση της τιμής της μεταβλητής στο X
-            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
-            if (rightSymbol != NULL) {
-                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
-            }
-        }
+    // Γεννάμε τον κώδικα για το αριστερό όρισμα
+    generateMixalCode(node->left);
+    
+    // Αποθήκευση του προσωρινού αποτελέσματος
+    fprintf(fout, " STA TEMP%d\n", addTemp);
 
-        // Αποθήκευση της τιμής του X προσωρινά και πρόσθεση
-        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X στη θέση 0
-        fprintf(fout, " ADD 0(0:5)\n");  // Πρόσθεση της τιμής του X με την τιμή του A
+    // Γεννάμε τον κώδικα για το δεξί όρισμα
+    generateMixalCode(node->right);
 
-        // Αποθήκευση του νέου αποτελέσματος ξανά στη μεταβλητή fact
-        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
-    } else {
-        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
-    }
+    // Πρόσθεση του προσωρινού αποτελέσματος με το νέο
+    fprintf(fout, " ADD TEMP%d\n", addTemp);
 }
 
 
 
 void generateMinus(AstNode* node) {
-    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
-    if (leftSymbol != NULL) {
-        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);  // Φόρτωση της τιμής του fact στον accumulator
+    int subTemp = temp_count++;
+    fprintf(fout, "OPPTEMP EQU 0\n");
+    fprintf(fout, "TEMP%d EQU 0\n", subTemp);
 
-        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
-        if (node->right->nodeType == NODE_NUMBER) {
-            fprintf(fout, " ENTX %s\n", node->right->value);   // Φόρτωση αριθμού στο X
-        } else if (node->right->nodeType == NODE_ID) {
-            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
-            if (rightSymbol != NULL) {
-                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);  // Φόρτωση της τιμής της μεταβλητής στο X
-            }
-        }
+    // Γεννάμε τον κώδικα για το αριστερό όρισμα
+    generateMixalCode(node->left);
 
-        // Αποθήκευση του X προσωρινά και αφαίρεση
-        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X προσωρινά
-        fprintf(fout, " SUB 0(0:5)\n");  // Αφαίρεση της τιμής του X από τον A
+    // Αποθήκευση του προσωρινού αποτελέσματος
+    fprintf(fout, " STA TEMP%d\n", subTemp);
 
-        // Αποθήκευση του νέου αποτελέσματος στη μεταβλητή fact
-        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
-    }
+    // Γεννάμε τον κώδικα για το δεξί όρισμα
+    generateMixalCode(node->right);
+
+    // Αφαίρεση του προσωρινού αποτελέσματος από το τρέχον αποτέλεσμα
+    fprintf(fout, " SUB TEMP%d\n", subTemp);
+
+    // Προαιρετικά: Μετατροπή A σε 0-A (αν απαιτείται για την έκφραση)
+    fprintf(fout, " STA OPPTEMP\n");
+    fprintf(fout, " ENTA 0\n");
+    fprintf(fout, " SUB OPPTEMP\n");
 }
 
 
+
 void generateMul(AstNode* node) {
-    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
-    if (leftSymbol != NULL) {
-        // Φόρτωση της τιμής του αριστερού ορίσματος (fact) στον A
-        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);
+    int mulTemp = temp_count++;
+    fprintf(fout, "TEMP%d EQU 0\n", mulTemp);
 
-        // Έλεγχος αν το δεξί όρισμα είναι αριθμός ή μεταβλητή (ID)
-        if (node->right->nodeType == NODE_NUMBER) {
-            // Αποθήκευση του αριθμού στο X
-            fprintf(fout, " ENTX %s\n", node->right->value);
-        } else if (node->right->nodeType == NODE_ID) {
-            // Φόρτωση της τιμής της μεταβλητής στο X
-            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
-            if (rightSymbol != NULL) {
-                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);
-            }
-        }
+    // Μηδενισμός της προσωρινής μεταβλητής πριν τη χρήση
+    fprintf(fout, " STZ TEMP%d\n", mulTemp);
 
-        // Αποθήκευση της τιμής του X προσωρινά και πολλαπλασιασμός
-        fprintf(fout, " STX 0(0:5)\n");  // Αποθήκευση της τιμής του X στη θέση 0
-        fprintf(fout, " MUL 0(0:5)\n");  // Πολλαπλασιασμός της τιμής του X με την τιμή του A
+    // Γεννάμε τον κώδικα για το αριστερό όρισμα
+    generateMixalCode(node->left);
 
-        // Αποθήκευση των αποτελεσμάτων του A και X
-        fprintf(fout, " STA 0(0:0)\n");  // Αποθήκευση του A
-        fprintf(fout, " STX 0(1:5)\n");  // Αποθήκευση του X
+    // Αποθήκευση του προσωρινού αποτελέσματος
+    fprintf(fout, " STA TEMP%d\n", mulTemp);
 
-        // Αποθήκευση του νέου αποτελέσματος στη μεταβλητή fact
-        fprintf(fout, " LDA 0(0:5)\n");  // Φόρτωση του αποτελέσματος
-        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
-    } else {
-        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
-    }
+    // Γεννάμε τον κώδικα για το δεξί όρισμα
+    generateMixalCode(node->right);
+
+    // Φόρτωση του προσωρινού αποτελέσματος και πολλαπλασιασμός
+    fprintf(fout, " MUL TEMP%d\n", mulTemp);  // Πολλαπλασιασμός με το προηγούμενο προσωρινό αποτέλεσμα
+    fprintf(fout, " STX TEMP%d\n", mulTemp);  // Αποθήκευση του X στο προσωρινό
+    fprintf(fout, " LDA TEMP%d\n", mulTemp);  // Φόρτωση του αποτελέσματος στον A
+    fprintf(fout, " ENTX 0\n");               // Μηδενισμός του X μετά την πράξη
 }
 
 
 void generateDiv(AstNode* node) {
-    // Φόρτωση του αριστερού ορίσματος (fact) στον accumulator (A)
-    Symbol *leftSymbol = findSymbol(node->left->value, symbolTable);
-    if (leftSymbol != NULL) {
-        fprintf(fout, " LDA %d(0:5)\n", leftSymbol->memoryLocation);  // Φόρτωση του αριστερού ορίσματος (fact)
+    int divTemp = temp_count++;
+    fprintf(fout, "TEMP%d EQU 0\n", divTemp);
+    fprintf(fout, "SWAPTEMP EQU 1\n");
 
-        // Έλεγχος για το δεξί όρισμα (αριθμός ή ID)
-        if (node->right->nodeType == NODE_NUMBER) {
-            // Έλεγχος για διαίρεση με το μηδέν
-            if (strcmp(node->right->value, "0") == 0) {
-                fprintf(fout, " JMP DIVZERO\n");  // Άλμα σε ετικέτα DIVZERO αν το δεξί μέρος είναι 0
-                return;
-            }
-            fprintf(fout, " ENTX %s\n", node->right->value);  // Φόρτωση του αριθμού στο X
-        } else if (node->right->nodeType == NODE_ID) {
-            Symbol *rightSymbol = findSymbol(node->right->value, symbolTable);
-            if (rightSymbol != NULL) {
-                fprintf(fout, " LDX %d(0:5)\n", rightSymbol->memoryLocation);  // Φόρτωση του δεξιού ορίσματος στο X
+    // Μηδενισμός της προσωρινής μεταβλητής πριν τη χρήση
+    // fprintf(fout, " STZ TEMP%d\n", divTemp);
 
-                // Έλεγχος αν η τιμή είναι μηδέν
-                fprintf(fout, " ENT1 0\n");
-                fprintf(fout, " CMP1 %d(0:5)\n", rightSymbol->memoryLocation);  // Σύγκριση με το 0
-                fprintf(fout, " JE DIVZERO\n");  // Αν είναι μηδέν, πήγαινε σε DIVZERO
-            }
-        }
+    // Γεννάμε τον κώδικα για το αριστερό όρισμα (διαιρούμενο)
+    generateMixalCode(node->left);
 
-        // Μηδενισμός του καταχωρητή X πριν τη διαίρεση
-        fprintf(fout, " STX 0(0:5)\n");
-        fprintf(fout, " ENTX 0\n");
+    // Αποθήκευση του προσωρινού αποτελέσματος
+    fprintf(fout, " STA TEMP%d\n", divTemp);
+    temp_count++;
 
-        // Εκτέλεση της διαίρεσης
-        fprintf(fout, " DIV 0(0:5)\n");
+    // Γεννάμε τον κώδικα για το δεξί όρισμα (διαιρέτης)
+    generateMixalCode(node->right);
 
-        // Αποθήκευση του αποτελέσματος της διαίρεσης στον accumulator (A)
-        fprintf(fout, " STA %d(0:5)\n", leftSymbol->memoryLocation);
+    // Εκτέλεση της διαίρεσης, αντιστροφή και φόρτωση τιμών
+    fprintf(fout, " STA SWAPTEMP\n");          // Αποθήκευση του A στο SWAPTEMP
+    fprintf(fout, " LDX SWAPTEMP\n");          // Φόρτωση του A στον X
+    fprintf(fout, " LDA TEMP%d\n", divTemp);   // Φόρτωση του προσωρινού αποτελέσματος στον A
+    fprintf(fout, " STX TEMP%d\n", divTemp);   // Αποθήκευση του X στο TEMP
+    fprintf(fout, " STA SWAPTEMP\n");          // Αποθήκευση του A στο SWAPTEMP
+    fprintf(fout, " LDX SWAPTEMP\n");          // Φόρτωση του SWAPTEMP στον X
+    fprintf(fout, " ENTA 0\n");                // Μηδενισμός του καταχωρητή A
+    fprintf(fout, " DIV TEMP%d\n", divTemp);   // Διαίρεση με το TEMP
 
-        // Ολοκλήρωση
-        fprintf(fout, " JMP ENDDIV\n");
-        fprintf(fout, "DIVZERO NOP\n");
-        fprintf(fout, " HLT\n");
-        fprintf(fout, "ENDDIV NOP\n");
-    } else {
-        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->left->value);
-    }
 }
-
-
-
-
-
 
 
 
@@ -264,11 +219,29 @@ void generateEQ(AstNode* node) {
     }
 }
 
-
-
 void generateReadCode(AstNode* node) {
-    fprintf(fout, " IN 1986(0:5)\n");  // Είσοδος τιμής
-    fprintf(fout, " STA %s(0:5)\n", node->value);  // Αποθήκευση τιμής
+    Symbol *symbol = findSymbol(node->value, symbolTable);
+    if (symbol != NULL) {
+        int input_buffer_address = 1000;  // Buffer εισόδου
+        int input_device = 19;            // Συσκευή εισόδου (πληκτρολόγιο)
+
+        // Εντολή για ανάγνωση από τη μονάδα 19
+        fprintf(fout, " IN %d(%d)\n", input_buffer_address, input_device);
+
+        // Έλεγχος της κατάστασης της συσκευής εισόδου
+        fprintf(fout, " JBUS *(%d)\n", input_device);
+
+        // Φόρτωση των δεδομένων που διαβάστηκαν στον καταχωρητή X
+        fprintf(fout, " LDX %d(0:5)\n", input_buffer_address);
+
+        // Μετατροπή της τιμής σε αριθμητική μορφή
+        fprintf(fout, " NUM\n");
+
+        // Αποθήκευση της τιμής στη μεταβλητή (μόνο τα πρώτα 5 bytes)
+        fprintf(fout, " STA %d(0:5)\n", symbol->memoryLocation);
+    } else {
+        fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->value);
+    }
 }
 
 void generateRepeatCode(AstNode* node) {
@@ -340,13 +313,6 @@ void generateWriteCode(AstNode* node) {
         fprintf(stderr, "Error: Variable %s not found in symbol table.\n", node->value);
     }
 }
-
-
-
-
-
-
-
 
 
 void generateSeqCode(AstNode* node) {

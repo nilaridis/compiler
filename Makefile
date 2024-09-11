@@ -9,7 +9,8 @@ compiler:
 	cd src; flex lex.l
 	# lex.yy.c
 
-	cd src; gcc -o ../compiler sydc1.tab.c lex.yy.c symbol.c ast.c zyywrap.c mixal_generator.c 
+	cd src; gcc -o ../compiler sydc1.tab.c lex.yy.c symbol.c ast.c zyywrap.c mixal_generator.c
+
 	# compiler.exe
 
 	rm -f src/sydc1.tab.h

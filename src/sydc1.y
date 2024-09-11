@@ -109,6 +109,8 @@ term:
     ;
 
 factor:
+    '(' exp ')' { $$ = $2; }
+    |
     DEC_CONST { 
         char buffer[100];
         snprintf(buffer, sizeof(buffer), "%d", $1);
@@ -117,7 +119,6 @@ factor:
     | ID {
         $$ = createNode(NODE_ID, NULL, NULL, strdup($1));
     }
-    | '(' exp ')' { $$ = $2; }
     ;
 
 %%
