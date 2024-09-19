@@ -1,5 +1,5 @@
 read x; 
- if 5 = x then 
+ if 0 < x then 
   fact := 1; 
   repeat 
    fact := fact * x; 

@@ -9,7 +9,7 @@
     Symbol *symbolTable = NULL;
     struct AstNode *root = NULL;
 
-    FILE *fout;  // Ορισμός της μεταβλητής fout
+    FILE *fout;
 
 
     void yyerror(const char *s);
@@ -132,7 +132,7 @@ void executeNode(AstNode *node) {
 
     switch (node->nodeType) {
         case NODE_PROGRAM: {
-            executeNode(node->left);  // Typically, the left child will hold the statements for a program
+            executeNode(node->left);
             break;
         }
         case NODE_IF: {
@@ -199,18 +199,15 @@ int main() {
     executeNode(root);
     printSymbolTable(symbolTable);
 
-    //Open the output file for MIXAL code
     fout = fopen("asm.mixal", "w");
     if (!fout) {
         fprintf(stderr, "Error: Could not open output file asm.mixal.\n");
         return 1;
     }
 
-    // Generate MIXAL code and write it to the file
     printf("\nGenerating MIXAL code:\n");
     generateMixalCode(root);
-
-    // Close the output file
+    
     fclose(fout);
 
      

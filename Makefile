@@ -20,7 +20,7 @@ compiler:
 
 .phony: test
 test: compiler
-	./compiler < samples/inputfile6.txt 1.mixal -asm -overflow
+	./compiler < samples/inputfile5.txt 1.mixal -asm -overflow
 	mixasm asm.mixal
 .phony: clean
 clean:

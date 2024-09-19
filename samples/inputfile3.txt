@@ -1,6 +1,7 @@
-x:=4;
-fact := 10;
-if 0<x then 
-    fact:=6
-end;
-write fact
+x := 2;
+if 3<x then 
+    x:=1;
+    y:=2 
+else 
+    y:=3
+end

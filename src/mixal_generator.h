@@ -5,11 +5,9 @@
 #include "symbol.h"
 #include <stdio.h>
 
-// Δηλώνουμε την εξωτερική μεταβλητή fout για το αρχείο εξόδου
 extern FILE *fout;
 extern Symbol *symbolTable; 
 
-// Δηλώσεις των συναρτήσεων για τους τύπους κόμβων
 void generateProgramCode(AstNode* node);
 void generateMixalCode(AstNode* node);
 void generateAssignmentCode(AstNode* node);

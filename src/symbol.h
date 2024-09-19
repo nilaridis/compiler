@@ -6,7 +6,6 @@ extern int next_index;
 #include <stdlib.h>
 #include "ast.h"
 
-// Representation of a symbol
 typedef struct Symbol {
     char *name;
     int value;
@@ -15,7 +14,7 @@ typedef struct Symbol {
 } Symbol;
 
 extern Symbol *symbolTable; 
-// Declarations
+
 Symbol *createSymbol(char *name, int value);
 void insertSymbol(char *name, int value, int memoryLocation, Symbol **symbolTable);
 Symbol *findSymbol(char *name, Symbol *symbolTable);
