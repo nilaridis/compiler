@@ -51,27 +51,38 @@ void generateID(AstNode* node) {
 
 // Παράδειγμα συνάρτησης για παραγωγή MIXAL για κόμβο IF
 void generateIfCode(AstNode* node) {
-    if (node->nodeType == NODE_IF) {
+    if ((node->nodeType == NODE_IF) && (node->right->nodeType != NODE_ELSE)) {
         generateMixalCode(node->left);  // Συνθήκη (π.χ., 30 < x)
-        fprintf(fout, " CMPA %d(0:5)\n", findSymbol(node->left->right->value, symbolTable)->memoryLocation);  // Σύγκριση με το x
         fprintf(fout, " JL THEN\n");  // Άλμα στο 'then' block αν η συνθήκη είναι αληθής
-        fprintf(fout, " JMP ELSE\n");  // Άλμα στο 'else' block αν η συνθήκη είναι ψευδής
+        // fprintf(fout, " JMP ELSE\n");  // Άλμα στο 'else' block αν η συνθήκη είναι ψευδής
 
         // THEN block
         fprintf(fout, "THEN NOP\n");
         generateMixalCode(node->right->left);  // Εντολές μέσα στο THEN block (π.χ., fact := 6)
 
         // Άλμα έξω από το 'else' block για να παρακαμφθεί
+        generateMixalCode(node->right->right);  // Εντολές μέσα στο ELSE block (π.χ., fact := 10, x := x - 1)
         fprintf(fout, " JMP ENDIF\n");
 
         // ELSE block
-        fprintf(fout, "ELSE NOP\n");
-        generateMixalCode(node->right->right);  // Εντολές μέσα στο ELSE block (π.χ., fact := 10, x := x - 1)
+        // fprintf(fout, "ELSE NOP\n");
 
         // Τέλος IF-ELSE block
         fprintf(fout, "ENDIF NOP\n");
+    } else if ((node->nodeType == NODE_IF)&& (node->right->nodeType == NODE_ELSE)){
+        generateMixalCode(node->left);
+        fprintf(fout, " JL THEN\n");
+        fprintf(fout, " JMP ELSE\n");
+        fprintf(fout, "THEN NOP\n");
+        generateMixalCode(node->right->left);  // Εντολές μέσα στο THEN block (π.χ., fact := 6)
+        fprintf(fout, " JMP ENDIF\n");
+        fprintf(fout, "ELSE NOP\n");
+        generateMixalCode(node->right->right);  // Εντολές μέσα στο ELSE block (π.χ., fact := 10, x := x - 1)
+        fprintf(fout, " JMP ENDIF\n");
+        fprintf(fout, "ENDIF NOP\n");
     }
 }
+
 
 void generatePlus(AstNode* node) {
     int addTemp = temp_count++;
@@ -246,10 +257,10 @@ void generateReadCode(AstNode* node) {
 
 void generateRepeatCode(AstNode* node) {
     static int repeatLabelCounter = 0;
-    int currentLabel = repeatLabelCounter++;
+    int currentRepeatLabel = repeatLabelCounter++;
 
     // Αρχή του repeat
-    fprintf(fout, "REPEAT%d NOP\n", currentLabel);
+    fprintf(fout, "REPEAT%d NOP\n", currentRepeatLabel);
 
     // Γεννάμε τον κώδικα για το σώμα της επανάληψης (π.χ., x := x - 1)
     generateMixalCode(node->left);
@@ -266,14 +277,14 @@ void generateRepeatCode(AstNode* node) {
 
         // Σύγκριση με 2 και έξοδος από τη βρόχο αν η συνθήκη ικανοποιείται
         fprintf(fout, " CMPA 1(0:5)\n");  // Σύγκριση του A με 0 (το οποίο θα έχει φορτωθεί με το 2)
-        fprintf(fout, " JE ENDREPEAT%d\n", currentLabel);  // Έξοδος από τον βρόχο αν x = 2
+        fprintf(fout, " JE ENDREPEAT%d\n", currentRepeatLabel);  // Έξοδος από τον βρόχο αν x = 2
     }
 
     // Αν η συνθήκη δεν ικανοποιείται, επιστροφή στην αρχή της βρόχου
-    fprintf(fout, " JMP REPEAT%d\n", currentLabel);
+    fprintf(fout, " JMP REPEAT%d\n", currentRepeatLabel);
 
     // Τέλος της βρόχου
-    fprintf(fout, "ENDREPEAT%d NOP\n", currentLabel);
+    fprintf(fout, "ENDREPEAT%d NOP\n", currentRepeatLabel);
 }
 
 
